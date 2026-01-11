@@ -5,7 +5,6 @@
     <div class="flex-1 flex flex-col h-full relative border-r border-slate-200">
       
       <div class="px-4 py-3 bg-white border-b border-slate-100 flex justify-between items-center z-20 shrink-0 shadow-sm h-16">
-        
         <div class="flex items-center gap-3">
           <button routerLink="/dashboard" class="h-10 w-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-600 tap-effect hover:bg-slate-100 transition-colors">
             <ion-icon name="arrow-back-outline" class="text-xl"></ion-icon>
@@ -28,7 +27,7 @@
         </button>
       </div>
 
-      <div class="flex-1 overflow-y-auto p-4 bg-slate-50 pb-32">
+      <div class="flex-1 overflow-y-auto p-4 bg-slate-50 pb-[60vh] md:pb-4">
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           <ng-container *ngFor="let product of products$ | async">
             <div (click)="addToCart(product)"
@@ -49,9 +48,9 @@
       </div>
     </div>
 
-    <div class="w-full md:w-[420px] bg-white shadow-2xl z-[500] fixed md:relative bottom-0 h-[60vh] md:h-full rounded-t-[2rem] md:rounded-none transition-transform border-t border-slate-100 overflow-hidden flex flex-col">
+    <div class="flex flex-col w-full md:w-[420px] bg-white shadow-[0_-5px_30px_rgba(0,0,0,0.15)] z-[500] fixed md:relative bottom-0 h-[55vh] md:h-full rounded-t-[2rem] md:rounded-none border-t border-slate-100 transition-transform">
       
-      <div class="px-6 py-3 flex justify-between items-center border-b border-dashed border-slate-200 bg-white h-16 shrink-0 z-10 relative">
+      <div class="shrink-0 px-6 py-3 flex justify-between items-center border-b border-dashed border-slate-200 bg-white h-16 rounded-t-[2rem] md:rounded-none">
         <div class="flex items-center gap-2">
           <div class="bg-indigo-50 p-2 rounded-lg text-indigo-600">
             <ion-icon name="cart-outline" class="text-xl"></ion-icon>
@@ -63,10 +62,10 @@
         </div>
       </div>
 
-      <div class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50 pb-[160px]">
+      <div class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50">
         <ng-container *ngIf="cart$ | async as cart">
           
-          <div *ngIf="cart.items.length === 0" class="h-48 flex flex-col items-center justify-center text-slate-300 gap-3">
+          <div *ngIf="cart.items.length === 0" class="h-full flex flex-col items-center justify-center text-slate-300 gap-3 min-h-[100px]">
             <ion-icon name="basket-outline" class="text-5xl opacity-40"></ion-icon>
             <p class="text-sm font-medium">Panier vide</p>
           </div>
@@ -88,11 +87,9 @@
         </ng-container>
       </div>
 
-      <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-5 z-[9999] flex flex-col gap-3"
-           style="padding-bottom: max(1.5rem, env(safe-area-inset-bottom) + 1rem);">
-        
+      <div class="shrink-0 bg-white border-t border-slate-100 p-5 z-20 pb-safe">
         <ng-container *ngIf="cart$ | async as cart">
-          <div class="flex justify-between items-end">
+          <div class="flex justify-between items-end mb-3">
             <div class="flex flex-col">
               <span class="text-xs text-slate-400 font-bold uppercase">Total TTC</span>
             </div>
