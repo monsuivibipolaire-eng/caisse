@@ -1,9 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonContent, IonIcon, IonItemSliding, IonItem, IonItemOptions, IonItemOption, ModalController, NavController } from '@ionic/angular/standalone';
+import { 
+  IonContent, IonIcon, IonItemSliding, IonItem, IonItemOptions, IonItemOption, 
+  ModalController, NavController, ToastController 
+} from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { arrowBackOutline, addOutline, cubeOutline, trashOutline, imageOutline, barcodeOutline, searchOutline, alertCircleOutline, filterOutline } from 'ionicons/icons';
+import { 
+  arrowBackOutline, addOutline, cubeOutline, trashOutline, imageOutline, 
+  barcodeOutline, searchOutline, alertCircleOutline, filterOutline, pencilOutline 
+} from 'ionicons/icons';
 import { ProductService } from 'src/app/services/product.service';
 import { Observable, BehaviorSubject, combineLatest } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -19,27 +25,23 @@ import { ProductModalComponent } from 'src/app/components/product-modal/product-
 })
 export class StocksPage implements OnInit {
   
-  // Flux de données
   private productsSource$ = this.productService.getProducts();
   
-  // Flux de critères de filtre
   searchTerm$ = new BehaviorSubject<string>('');
   categoryFilter$ = new BehaviorSubject<string>('Tout');
 
-  // Résultat combiné
   filteredProducts$: Observable<Product[]>;
 
-  // Liste des catégories
   categories = ['Tout', 'Stock Faible', 'Boissons', 'Snack', 'Viennoiserie', 'Divers'];
 
   constructor(
     private productService: ProductService, 
     private modalCtrl: ModalController,
-    private navCtrl: NavController // <--- Injection pour la navigation
+    private navCtrl: NavController,
+    private toastCtrl: ToastController
   ) {
-    addIcons({ arrowBackOutline, addOutline, cubeOutline, trashOutline, imageOutline, barcodeOutline, searchOutline, alertCircleOutline, filterOutline });
+    addIcons({ arrowBackOutline, addOutline, cubeOutline, trashOutline, imageOutline, barcodeOutline, searchOutline, alertCircleOutline, filterOutline, pencilOutline });
     
-    // Logique de filtrage (RxJS)
     this.filteredProducts$ = combineLatest([
       this.productsSource$,
       this.searchTerm$,
@@ -56,7 +58,6 @@ export class StocksPage implements OnInit {
         } else if (category !== 'Tout') {
           filtered = filtered.filter(p => p.category === category);
         }
-
         return filtered;
       })
     );
@@ -64,7 +65,6 @@ export class StocksPage implements OnInit {
 
   ngOnInit() {}
 
-  // Navigation Retour Robuste
   goBack() {
     this.navCtrl.navigateBack('/dashboard');
   }
@@ -77,16 +77,39 @@ export class StocksPage implements OnInit {
     this.categoryFilter$.next(cat);
   }
 
+  // OUVERTURE MODALE : CRÉATION
   async openAddModal() {
     const modal = await this.modalCtrl.create({ component: ProductModalComponent });
     modal.present();
     const { data, role } = await modal.onWillDismiss();
     if (role === 'confirm' && data) {
       this.productService.addProduct(data);
+      this.presentToast('Produit créé avec succès', 'success');
     }
   }
 
-  deleteProduct(id: string) {
-    this.productService.deleteProduct(id);
+  // OUVERTURE MODALE : ÉDITION
+  async editProduct(product: Product, slidingItem: any) {
+    slidingItem.close(); // Ferme le menu glissant
+    const modal = await this.modalCtrl.create({ 
+      component: ProductModalComponent,
+      componentProps: { productToEdit: product } // On passe le produit
+    });
+    modal.present();
+    const { data, role } = await modal.onWillDismiss();
+    if (role === 'confirm' && data) {
+      await this.productService.updateProduct(data);
+      this.presentToast('Produit mis à jour', 'success');
+    }
+  }
+
+  async deleteProduct(id: string) {
+    await this.productService.deleteProduct(id);
+    this.presentToast('Produit supprimé', 'dark');
+  }
+
+  async presentToast(msg: string, color: string) {
+    const t = await this.toastCtrl.create({ message: msg, duration: 2000, color, position: 'top' });
+    t.present();
   }
 }

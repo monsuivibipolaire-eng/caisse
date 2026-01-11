@@ -1,86 +1,63 @@
-<ion-header class="ion-no-border">
-  <ion-toolbar class="bg-white border-b border-slate-100">
-    <ion-buttons slot="start">
-      <ion-button (click)="cancel()" class="text-slate-500 font-medium text-sm normal-case">
-        Annuler
-      </ion-button>
-    </ion-buttons>
-
-    <ion-title class="font-bold text-slate-800 text-center">Nouveau Produit</ion-title>
-
+<ion-header>
+  <ion-toolbar>
+    <ion-title>{{ isEditMode ? 'Modifier Produit' : 'Nouveau Produit' }}</ion-title>
     <ion-buttons slot="end">
-      <ion-button (click)="confirm()" [strong]="true" [disabled]="isUploading" class="text-indigo-600 font-bold text-sm normal-case">
-        Enregistrer
+      <ion-button (click)="cancel()">
+        <ion-icon slot="icon-only" name="close-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content class="bg-slate-50">
-  <div class="p-5 flex flex-col gap-5 pb-10">
+<ion-content class="ion-padding">
+  
+  <div class="flex justify-center mb-6">
+    <div (click)="selectPhoto()" 
+         class="relative h-32 w-32 rounded-2xl bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden tap-effect active:scale-95 transition-transform cursor-pointer">
+      
+      <img *ngIf="product.imageUrl" [src]="product.imageUrl" class="h-full w-full object-cover" />
+      
+      <div *ngIf="!product.imageUrl && !isUploading" class="flex flex-col items-center text-slate-400">
+        <ion-icon name="camera-outline" class="text-3xl"></ion-icon>
+        <span class="text-xs font-bold mt-1">Ajouter photo</span>
+      </div>
+
+      <div *ngIf="isUploading" class="absolute inset-0 bg-white/80 flex items-center justify-center">
+        <ion-spinner color="primary"></ion-spinner>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-4">
     
-    <div class="flex justify-center mb-2">
-      <div (click)="selectPhoto()" 
-           class="relative h-28 w-28 rounded-full bg-white border-4 border-white shadow-md flex items-center justify-center overflow-hidden tap-effect cursor-pointer group">
-        
-        <img *ngIf="product.imageUrl" [src]="product.imageUrl" class="h-full w-full object-cover" />
-        <div *ngIf="!product.imageUrl" class="flex flex-col items-center text-slate-300">
-          <ion-icon name="image-outline" class="text-3xl"></ion-icon>
-          <span class="text-[10px] font-bold uppercase mt-1">Photo</span>
-        </div>
-
-        <div *ngIf="isUploading" class="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
-          <ion-spinner color="light"></ion-spinner>
-        </div>
-
-        <div class="absolute inset-0 bg-black/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
-          <ion-icon name="camera-outline" class="text-white text-3xl drop-shadow-md"></ion-icon>
-        </div>
-        
-        <div class="absolute bottom-1 right-3 bg-indigo-600 text-white rounded-full p-1 shadow-sm z-20" *ngIf="!isUploading">
-           <ion-icon name="add" class="text-xs"></ion-icon>
-        </div>
-      </div>
+    <div class="bg-white rounded-xl border border-slate-200 px-4 py-1">
+      <ion-item lines="none" class="--padding-start-0">
+        <ion-label position="stacked" class="text-xs font-bold text-slate-400 uppercase">Nom du produit</ion-label>
+        <ion-input [(ngModel)]="product.name" placeholder="Ex: Café" type="text" class="font-bold text-slate-800"></ion-input>
+      </ion-item>
     </div>
 
-    <div>
-      <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Identification</p>
-      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <ion-item lines="none" class="border-b border-slate-50">
-          <ion-label position="stacked" class="font-bold text-slate-500 text-xs uppercase mb-1">Nom du produit</ion-label>
-          <ion-input [(ngModel)]="product.name" type="text" placeholder="Ex: Café Espresso" class="font-semibold text-slate-800"></ion-input>
-        </ion-item>
-
+    <div class="grid grid-cols-2 gap-4">
+      <div class="bg-white rounded-xl border border-slate-200 px-4 py-1">
         <ion-item lines="none">
-          <ion-label position="stacked" class="font-bold text-slate-500 text-xs uppercase mb-1">Code-barres (EAN)</ion-label>
-          <div class="flex items-center w-full gap-2">
-            <ion-icon name="barcode-outline" class="text-slate-400"></ion-icon>
-            <ion-input [(ngModel)]="product.barcode" type="text" placeholder="Scanner ou saisir" class="font-mono text-slate-600"></ion-input>
-          </div>
+          <ion-label position="stacked" class="text-xs font-bold text-slate-400 uppercase">Prix (€)</ion-label>
+          <ion-input [(ngModel)]="product.price" type="number" placeholder="0.00" class="font-bold text-slate-800"></ion-input>
+        </ion-item>
+      </div>
+      
+      <div class="bg-white rounded-xl border border-slate-200 px-4 py-1">
+        <ion-item lines="none">
+          <ion-label position="stacked" class="text-xs font-bold text-slate-400 uppercase">Stock</ion-label>
+          <ion-input [(ngModel)]="product.stock" type="number" placeholder="0" class="font-bold text-slate-800"></ion-input>
         </ion-item>
       </div>
     </div>
 
-    <div>
-      <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Détails</p>
-      <div class="grid grid-cols-2 gap-4">
-        <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
-          <ion-label class="block font-bold text-slate-500 text-xs uppercase mb-1">Prix (€)</ion-label>
-          <ion-input [(ngModel)]="product.price" type="number" placeholder="0.00" class="font-bold text-slate-800 text-lg"></ion-input>
-        </div>
-
-        <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
-          <ion-label class="block font-bold text-slate-500 text-xs uppercase mb-1">Stock</ion-label>
-          <ion-input [(ngModel)]="product.stock" type="number" placeholder="0" class="font-bold text-slate-800 text-lg"></ion-input>
-        </div>
-      </div>
-    </div>
-
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-1">
+    <div class="bg-white rounded-xl border border-slate-200 px-4 py-1">
       <ion-item lines="none">
-        <ion-icon name="grid-outline" slot="start" class="text-slate-400 text-sm"></ion-icon>
-        <ion-label class="font-bold text-slate-600 text-sm">Catégorie</ion-label>
-        <ion-select [(ngModel)]="product.category" interface="popover" class="font-bold text-indigo-600">
+        <ion-icon slot="start" name="grid-outline" class="text-slate-400 text-sm mt-3"></ion-icon>
+        <ion-label position="stacked" class="text-xs font-bold text-slate-400 uppercase">Catégorie</ion-label>
+        <ion-select [(ngModel)]="product.category" interface="popover" class="font-bold text-slate-800">
           <ion-select-option value="Boissons">Boissons</ion-select-option>
           <ion-select-option value="Snack">Snack</ion-select-option>
           <ion-select-option value="Viennoiserie">Viennoiserie</ion-select-option>
@@ -89,5 +66,21 @@
       </ion-item>
     </div>
 
+    <div class="bg-white rounded-xl border border-slate-200 px-4 py-1">
+      <ion-item lines="none">
+        <ion-icon slot="start" name="barcode-outline" class="text-slate-400 text-sm mt-3"></ion-icon>
+        <ion-label position="stacked" class="text-xs font-bold text-slate-400 uppercase">Code-barres</ion-label>
+        <ion-input [(ngModel)]="product.barcode" type="text" placeholder="Scan..." class="font-mono text-sm text-slate-600"></ion-input>
+      </ion-item>
+    </div>
+
   </div>
+
+  <div class="mt-8">
+    <ion-button (click)="confirm()" expand="block" class="h-12 font-bold" shape="round">
+      <ion-icon slot="start" name="save-outline"></ion-icon>
+      {{ isEditMode ? 'Enregistrer les modifications' : 'Créer le produit' }}
+    </ion-button>
+  </div>
+
 </ion-content>

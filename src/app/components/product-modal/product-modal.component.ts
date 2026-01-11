@@ -1,14 +1,13 @@
-import { Component } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { 
   IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton, 
   IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, ModalController, IonIcon, 
-  IonSpinner, LoadingController 
+  IonSpinner, ToastController 
 } from '@ionic/angular/standalone';
 import { Product } from 'src/app/models/product.model';
 import { addIcons } from 'ionicons';
-// IMPORTS COMPLETS
 import { closeOutline, saveOutline, barcodeOutline, gridOutline, cameraOutline, imageOutline, add } from 'ionicons/icons';
 import { ImageService } from 'src/app/services/image.service';
 
@@ -22,7 +21,10 @@ import { ImageService } from 'src/app/services/image.service';
     IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, IonIcon, IonSpinner
   ]
 })
-export class ProductModalComponent {
+export class ProductModalComponent implements OnInit {
+
+  // Si ce produit est passé en entrée, on est en mode "Modification"
+  @Input() productToEdit?: Product;
 
   product: Product = {
     name: '',
@@ -34,14 +36,23 @@ export class ProductModalComponent {
   };
 
   isUploading = false;
+  isEditMode = false; // Flag pour savoir si on modifie ou on crée
 
   constructor(
     private modalCtrl: ModalController,
     private imageService: ImageService,
-    private loadingCtrl: LoadingController
+    private toastCtrl: ToastController
   ) {
-    // ENREGISTREMENT DES ICONES
     addIcons({ closeOutline, saveOutline, barcodeOutline, gridOutline, cameraOutline, imageOutline, add });
+  }
+
+  ngOnInit() {
+    // Si on a reçu un produit, on initialise le formulaire avec ses valeurs
+    if (this.productToEdit) {
+      this.isEditMode = true;
+      // On copie l'objet pour ne pas modifier l'original en temps réel avant validation
+      this.product = { ...this.productToEdit };
+    }
   }
 
   cancel() {
@@ -49,28 +60,38 @@ export class ProductModalComponent {
   }
 
   async selectPhoto() {
-    console.log('Début sélection photo...');
-    try {
-      const base64 = await this.imageService.selectImage();
-      
-      if (base64) {
-        this.isUploading = true;
-        console.log('Image reçue, début upload...');
+    const base64 = await this.imageService.selectImage();
+    
+    if (base64) {
+      this.isUploading = true;
+      try {
         const url = await this.imageService.uploadImage(base64);
         this.product.imageUrl = url;
-        console.log('Succès upload:', url);
-      } else {
-        console.log('Aucune image sélectionnée');
+      } catch (error) {
+        console.error('Erreur upload', error);
+        this.presentToast('Erreur lors de l\'upload', 'danger');
+      } finally {
+        this.isUploading = false;
       }
-    } catch (e) {
-      console.error('Erreur dans le processus photo:', e);
-    } finally {
-      this.isUploading = false;
     }
   }
 
   confirm() {
-    if (!this.product.name) return;
+    if (!this.product.name) {
+      this.presentToast('Le nom est obligatoire', 'warning');
+      return;
+    }
+    // On renvoie le produit modifié (ou créé)
     this.modalCtrl.dismiss(this.product, 'confirm');
+  }
+
+  async presentToast(msg: string, color: string) {
+    const toast = await this.toastCtrl.create({
+      message: msg,
+      duration: 2000,
+      color: color,
+      position: 'top'
+    });
+    toast.present();
   }
 }

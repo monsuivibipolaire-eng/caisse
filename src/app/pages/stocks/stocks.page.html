@@ -3,14 +3,12 @@
   <div class="absolute inset-0 flex flex-col w-full h-full overflow-hidden">
     
     <div class="bg-white px-6 pt-4 pb-2 border-b border-slate-50 flex justify-between items-center shrink-0 z-20">
-      
       <div class="flex items-center gap-3">
         <button (click)="goBack()" class="h-10 w-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-600 tap-effect hover:bg-slate-100 transition-colors z-30">
           <ion-icon name="arrow-back-outline" class="text-xl"></ion-icon>
         </button>
         <h1 (click)="goBack()" class="font-bold text-lg text-slate-800 cursor-pointer">Gestion Stock</h1>
       </div>
-      
       <button (click)="openAddModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-bold shadow-lg shadow-indigo-200 tap-effect active:scale-95 transition-transform">
         <ion-icon name="add-outline" class="text-lg"></ion-icon>
         <span class="hidden sm:inline">Nouveau</span>
@@ -18,7 +16,6 @@
     </div>
 
     <div class="bg-white pb-3 px-4 shadow-sm z-10 shrink-0 flex flex-col gap-3">
-      
       <div class="relative bg-slate-100 rounded-xl overflow-hidden flex items-center h-12 border border-slate-100 focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-100 transition-all">
         <div class="pl-4 text-slate-400">
           <ion-icon name="search-outline" class="text-xl"></ion-icon>
@@ -30,7 +27,6 @@
           (input)="onSearch($event)"
         >
       </div>
-
       <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
         <ng-container *ngFor="let cat of categories">
           <button 
@@ -54,7 +50,14 @@
           <p class="font-medium text-sm">Aucun produit trouvé</p>
         </div>
 
-        <ion-item-sliding *ngFor="let product of products" class="group rounded-2xl overflow-hidden bg-transparent shadow-sm hover:shadow-md transition-shadow">
+        <ion-item-sliding *ngFor="let product of products" #slidingItem class="group rounded-2xl overflow-hidden bg-transparent shadow-sm hover:shadow-md transition-shadow">
+          
+          <ion-item-options side="start">
+            <ion-item-option color="primary" (click)="editProduct(product, slidingItem)" class="pl-6 pr-6">
+              <ion-icon slot="icon-only" name="pencil-outline" class="text-xl"></ion-icon>
+            </ion-item-option>
+          </ion-item-options>
+
           <ion-item lines="none" class="bg-white border border-slate-100 rounded-2xl p-0">
             <div class="flex items-center w-full py-3 px-1 pl-3">
               <div class="h-14 w-14 rounded-xl bg-slate-50 overflow-hidden border border-slate-100 shrink-0 relative">
@@ -82,11 +85,13 @@
               </div>
             </div>
           </ion-item>
+          
           <ion-item-options side="end">
             <ion-item-option color="danger" (click)="deleteProduct(product.id!)" class="pl-6 pr-6">
               <ion-icon slot="icon-only" name="trash-outline" class="text-xl"></ion-icon>
             </ion-item-option>
           </ion-item-options>
+
         </ion-item-sliding>
       </ng-container>
     </div>

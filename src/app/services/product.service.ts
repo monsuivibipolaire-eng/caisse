@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, collection, collectionData, addDoc, deleteDoc, doc } from '@angular/fire/firestore';
+import { Firestore, collection, collectionData, addDoc, doc, deleteDoc, updateDoc } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 import { Product } from '../models/product.model';
 
@@ -7,48 +7,30 @@ import { Product } from '../models/product.model';
   providedIn: 'root'
 })
 export class ProductService {
-  
-  // Injection du service Firestore
   private firestore: Firestore = inject(Firestore);
-  
-  // Référence à la collection 'products'
   private productsCollection = collection(this.firestore, 'products');
-
-  // Observable en temps réel (inclut l'ID du document)
-  readonly products$: Observable<Product[]> = collectionData(this.productsCollection, {
-    idField: 'id',
-  }) as Observable<Product[]>;
 
   constructor() {}
 
-  /**
-   * Retourne le flux de données en temps réel
-   */
   getProducts(): Observable<Product[]> {
-    return this.products$;
+    return collectionData(this.productsCollection, { idField: 'id' }) as Observable<Product[]>;
   }
 
-  /**
-   * Ajoute un produit dans Firestore
-   */
-  async addProduct(product: Product): Promise<void> {
-    // On retire l'id s'il existe (Firestore le génère)
+  async addProduct(product: Product) {
+    return addDoc(this.productsCollection, product);
+  }
+
+  // NOUVEAU : Fonction de mise à jour
+  async updateProduct(product: Product) {
+    if (!product.id) return;
+    const productDoc = doc(this.firestore, `products/${product.id}`);
+    // On retire l'ID de l'objet data pour ne pas le dupliquer dans les champs
     const { id, ...data } = product;
-    
-    // Valeur par défaut pour l'image si vide
-    if (!data.imageUrl) {
-      data.imageUrl = 'https://placehold.co/100x100/e5e7eb/black?text=Produit';
-    }
-
-    // Ajout asynchrone
-    await addDoc(this.productsCollection, data);
+    return updateDoc(productDoc, data as any);
   }
 
-  /**
-   * Supprime un produit via son ID Firestore
-   */
-  async deleteProduct(id: string): Promise<void> {
-    const docRef = doc(this.firestore, 'products/' + id);
-    await deleteDoc(docRef);
+  async deleteProduct(id: string) {
+    const productDoc = doc(this.firestore, `products/${id}`);
+    return deleteDoc(productDoc);
   }
 }

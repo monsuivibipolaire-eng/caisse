@@ -3,235 +3,122 @@
 # Arrêter le script en cas d'erreur
 set -e
 
-echo "🎨 Déplacement des filtres dans l'en-tête (Header)..."
+echo "🛡️ Application du layout 'Blindé' pour le Panier..."
 
-# 1. Mise à jour du HTML (Filtres visibles dans le header)
-echo "📝 Mise à jour de src/app/pages/history/history.page.html..."
-cat > src/app/pages/history/history.page.html <<EOF
+# Réécriture complète de la structure du Panier dans caisse.page.html
+cat > src/app/pages/caisse/caisse.page.html <<EOF
 <ion-content [fullscreen]="true" [scrollY]="false" class="bg-slate-50">
-  <div class="absolute inset-0 flex flex-col w-full h-full overflow-hidden">
+  
+  <div class="absolute inset-0 flex flex-col md:flex-row w-full h-full overflow-hidden">
     
-    <div class="bg-white border-b border-slate-100 flex flex-col shrink-0 z-20 shadow-sm">
+    <div class="flex-1 flex flex-col h-full relative border-r border-slate-200">
       
-      <div class="px-5 py-3 flex items-center gap-3">
-        <button routerLink="/dashboard" class="h-10 w-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-600 tap-effect hover:bg-slate-100 transition-colors">
-          <ion-icon name="arrow-back-outline" class="text-xl"></ion-icon>
+      <div class="px-5 py-3 bg-white border-b border-slate-100 flex justify-between items-center z-20 shrink-0 shadow-sm h-16">
+        <div class="flex items-center gap-3">
+          <button routerLink="/dashboard" class="h-10 w-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-600 tap-effect hover:bg-slate-100 transition-colors">
+            <ion-icon name="arrow-back-outline" class="text-xl"></ion-icon>
+          </button>
+          <h1 class="font-bold text-lg text-slate-800">Caisse</h1>
+        </div>
+        <button (click)="openScanner()" class="bg-slate-800 text-white px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-bold shadow-lg shadow-slate-300 tap-effect active:scale-95 transition-transform">
+          <ion-icon name="scan-outline" class="text-lg"></ion-icon>
+          <span class="hidden sm:inline">Scanner</span>
         </button>
-        <h1 class="font-bold text-lg text-slate-800">Historique</h1>
       </div>
 
-      <div class="px-5 pb-4 flex flex-col gap-3">
-        
-        <ion-segment [value]="paymentFilter$ | async" (ionChange)="onPaymentChange(\$event)" mode="ios" class="h-8">
-          <ion-segment-button value="ALL">
-            <ion-label class="text-xs font-bold">Tout</ion-label>
-          </ion-segment-button>
-          <ion-segment-button value="ESPECES">
-            <ion-label class="text-xs font-bold">Espèces</ion-label>
-          </ion-segment-button>
-          <ion-segment-button value="CARTE">
-            <ion-label class="text-xs font-bold">Carte</ion-label>
-          </ion-segment-button>
-        </ion-segment>
-
-        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
-          
-          <button (click)="setRange('today')" 
-            [class]="currentRange === 'today' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-slate-100 text-slate-600 border border-slate-200'"
-            class="px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all tap-effect">
-            Aujourd'hui
-          </button>
-          
-          <button (click)="setRange('yesterday')" 
-            [class]="currentRange === 'yesterday' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-slate-100 text-slate-600 border border-slate-200'"
-            class="px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all tap-effect">
-            Hier
-          </button>
-          
-          <button (click)="setRange('week')" 
-            [class]="currentRange === 'week' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-slate-100 text-slate-600 border border-slate-200'"
-            class="px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all tap-effect">
-            7 Jours
-          </button>
-
-          <div class="relative ml-auto">
-             <ion-datetime-button datetime="datetime" class="scale-90 origin-right"></ion-datetime-button>
-          </div>
+      <div class="flex-1 overflow-y-auto p-4 bg-slate-50 pb-32">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <ng-container *ngFor="let product of products$ | async">
+            <div (click)="addToCart(product)"
+                 class="bg-white rounded-2xl p-2 shadow-sm border border-slate-100 group tap-effect cursor-pointer flex flex-col h-48 active:scale-95 transition-transform">
+              
+              <div class="h-28 w-full bg-slate-50 rounded-xl overflow-hidden relative mb-2">
+                 <img [src]="product.imageUrl" class="h-full w-full object-cover" loading="lazy" />
+                 <div class="absolute bottom-1 right-1 bg-white/90 backdrop-blur px-2 py-0.5 rounded-md text-[10px] font-bold text-slate-900 shadow-sm">
+                   {{ product.price | currency:'EUR':'symbol':'1.2-2' }}
+                 </div>
+              </div>
+              
+              <div class="flex-1 flex flex-col px-1">
+                 <h3 class="font-bold text-slate-700 text-xs leading-tight line-clamp-2">{{ product.name }}</h3>
+                 <p class="text-[9px] text-slate-400 font-bold uppercase mt-auto">{{ product.category }}</p>
+              </div>
+            </div>
+          </ng-container>
         </div>
-
       </div>
     </div>
 
-    <div class="px-4 py-3 shrink-0 z-10 grid grid-cols-2 gap-4 bg-slate-50/50">
-        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col">
-          <p class="text-[10px] uppercase font-bold text-slate-400">Total Période</p>
-          <p class="text-lg font-extrabold text-indigo-600">
-            <ng-container *ngIf="stats$ | async as stats">{{ stats.totalRevenue | currency:'EUR':'symbol':'1.0-0' }}</ng-container>
-          </p>
-        </div>
-        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col">
-          <p class="text-[10px] uppercase font-bold text-slate-400">Nombre de Ventes</p>
-          <p class="text-lg font-extrabold text-emerald-600">
-            <ng-container *ngIf="stats$ | async as stats">{{ stats.count }}</ng-container>
-          </p>
-        </div>
-    </div>
-
-    <div class="flex-1 overflow-y-auto px-4 pb-safe space-y-3 bg-slate-50">
-      <ng-container *ngIf="sales$ | async as sales; else loading">
-        
-        <div *ngIf="sales.length === 0" class="flex flex-col items-center justify-center h-48 text-slate-400 gap-2">
-          <ion-icon name="receipt-outline" class="text-4xl opacity-50"></ion-icon>
-          <p class="font-medium text-sm">Aucune vente trouvée</p>
-        </div>
-
-        <div *ngFor="let sale of sales" (click)="openReceipt(sale)" class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between active:scale-98 transition-transform cursor-pointer hover:border-indigo-100">
-          <div class="flex items-center gap-4">
-            <div class="h-10 w-10 rounded-full flex items-center justify-center font-bold text-xs shadow-sm"
-                 [ngClass]="sale.paymentMethod === 'CARTE' ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'">
-              <ion-icon [name]="sale.paymentMethod === 'CARTE' ? 'card-outline' : 'cash-outline'" class="text-lg"></ion-icon>
-            </div>
-            <div>
-              <p class="font-bold text-slate-800 text-sm">
-                {{ sale.date?.seconds * 1000 | date:'HH:mm' }} 
-                <span class="text-slate-400 font-normal ml-1 text-xs">{{ sale.itemCount }} art.</span>
-              </p>
-              <p class="text-[10px] text-slate-400 font-mono">ID: {{ sale.id | slice:0:6 }}</p>
-            </div>
-          </div>
-          <span class="font-bold text-slate-800">{{ sale.total | currency:'EUR':'symbol':'1.2-2' }}</span>
-        </div>
-      </ng-container>
+    <div class="w-full md:w-[420px] bg-white shadow-2xl z-[500] fixed md:relative bottom-0 h-[60vh] md:h-full rounded-t-[2rem] md:rounded-none transition-transform border-t border-slate-100 overflow-hidden flex flex-col">
       
-      <ng-template #loading>
-        <div class="text-center py-10 text-slate-400">Chargement...</div>
-      </ng-template>
+      <div class="px-6 py-3 flex justify-between items-center border-b border-dashed border-slate-200 bg-white h-16 shrink-0 z-10 relative">
+        <div class="flex items-center gap-2">
+          <div class="bg-indigo-50 p-2 rounded-lg text-indigo-600">
+            <ion-icon name="cart-outline" class="text-xl"></ion-icon>
+          </div>
+          <span class="font-bold text-slate-800">Panier</span>
+        </div>
+        <div class="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold">
+          <ng-container *ngIf="cart$ | async as cart">{{ cart.itemCount }} items</ng-container>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50 pb-[160px]">
+        <ng-container *ngIf="cart$ | async as cart">
+          
+          <div *ngIf="cart.items.length === 0" class="h-48 flex flex-col items-center justify-center text-slate-300 gap-3">
+            <ion-icon name="basket-outline" class="text-5xl opacity-40"></ion-icon>
+            <p class="text-sm font-medium">Panier vide</p>
+          </div>
+
+          <div *ngFor="let item of cart.items" class="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+            <div class="flex-1 min-w-0 mr-3">
+              <h4 class="font-bold text-slate-700 text-sm truncate">{{ item.product.name }}</h4>
+              <div class="text-xs text-indigo-600 font-bold mt-0.5">
+                {{ item.product.price | currency:'EUR' }} 
+                <span class="text-slate-400 font-normal">x {{ item.quantity }}</span>
+              </div>
+            </div>
+            
+            <div class="flex items-center bg-slate-50 rounded-lg h-8 border border-slate-200">
+              <button (click)="decreaseItem(item.product.id!)" class="w-8 h-full flex items-center justify-center text-slate-500 hover:bg-white rounded-l-lg tap-effect">
+                <ion-icon name="remove-outline"></ion-icon>
+              </button>
+              <span class="w-6 text-center text-xs font-bold text-slate-800">{{ item.quantity }}</span>
+              <button (click)="addToCart(item.product)" class="w-8 h-full flex items-center justify-center text-slate-500 hover:bg-white rounded-r-lg tap-effect">
+                <ion-icon name="add-outline"></ion-icon>
+              </button>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-5 z-[9999]"
+           style="padding-bottom: max(1.5rem, env(safe-area-inset-bottom) + 1rem);">
+        
+        <ng-container *ngIf="cart$ | async as cart">
+          <div class="flex justify-between items-end mb-3">
+            <div class="flex flex-col">
+              <span class="text-xs text-slate-400 font-bold uppercase">Total TTC</span>
+            </div>
+            <span class="text-3xl font-extrabold text-slate-900 tracking-tight">{{ cart.total | currency:'EUR':'symbol':'1.2-2' }}</span>
+          </div>
+          
+          <button (click)="validateSale()" 
+                  [disabled]="cart.items.length === 0 || isProcessing"
+                  class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold shadow-xl shadow-indigo-200 flex items-center justify-center gap-3 tap-effect disabled:opacity-50 disabled:shadow-none transition-all hover:bg-indigo-700 active:scale-95">
+            <span *ngIf="!isProcessing" class="flex items-center gap-2">
+              VALIDER <ion-icon name="checkmark-circle-outline" class="text-xl"></ion-icon>
+            </span>
+            <span *ngIf="isProcessing">Traitement...</span>
+          </button>
+        </ng-container>
+      </div>
+
     </div>
-
   </div>
-
-  <ion-modal [keepContentsMounted]="true">
-    <ng-template>
-      <ion-datetime id="datetime" presentation="date" (ionChange)="onDateChange(\$event)"></ion-datetime>
-    </ng-template>
-  </ion-modal>
-
 </ion-content>
 EOF
 
-# 2. Mise à jour du TS (Simplification)
-echo "🧠 Nettoyage de src/app/pages/history/history.page.ts..."
-cat > src/app/pages/history/history.page.ts <<EOF
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
-import { FormsModule } from '@angular/forms';
-import { 
-  IonContent, IonIcon, IonModal, IonDatetime, IonDatetimeButton, 
-  IonSegment, IonSegmentButton, IonLabel, ModalController 
-} from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import { arrowBackOutline, calendarOutline, receiptOutline, cardOutline, cashOutline } from 'ionicons/icons';
-import { StatsService } from 'src/app/services/stats.service';
-import { Sale } from 'src/app/models/sale.model';
-import { Observable, BehaviorSubject, combineLatest, map, switchMap } from 'rxjs';
-import { ReceiptModalComponent } from 'src/app/components/receipt-modal/receipt-modal.component';
-
-@Component({
-  selector: 'app-history',
-  templateUrl: './history.page.html',
-  standalone: true,
-  imports: [
-    CommonModule, RouterLink, FormsModule,
-    IonContent, IonIcon, IonModal, IonDatetime, IonDatetimeButton,
-    IonSegment, IonSegmentButton, IonLabel
-  ]
-})
-export class HistoryPage implements OnInit {
-
-  // Flux de données
-  rangeSubject = new BehaviorSubject<{start: Date, end: Date}>(this.getRange('today'));
-  paymentFilter$ = new BehaviorSubject<string>('ALL');
-  
-  sales$: Observable<Sale[]>;
-  stats$: Observable<{ totalRevenue: number, count: number }>;
-  
-  currentRange: 'today' | 'yesterday' | 'week' | 'custom' = 'today';
-
-  constructor(private statsService: StatsService, private modalCtrl: ModalController) {
-    addIcons({ arrowBackOutline, calendarOutline, receiptOutline, cardOutline, cashOutline });
-
-    this.sales$ = combineLatest([
-      this.rangeSubject.pipe(
-        switchMap(range => this.statsService.getSalesHistory(range.start, range.end))
-      ),
-      this.paymentFilter$
-    ]).pipe(
-      map(([sales, paymentType]) => {
-        if (paymentType === 'ALL') return sales;
-        return sales.filter(s => s.paymentMethod === paymentType);
-      })
-    );
-
-    this.stats$ = this.sales$.pipe(
-      map(sales => ({
-        totalRevenue: sales.reduce((acc, s) => acc + s.total, 0),
-        count: sales.length
-      }))
-    );
-  }
-
-  ngOnInit() {}
-
-  setRange(type: 'today' | 'yesterday' | 'week') {
-    this.currentRange = type;
-    this.rangeSubject.next(this.getRange(type));
-  }
-
-  onDateChange(event: any) {
-    const dateStr = event.detail.value;
-    if (dateStr) {
-      this.currentRange = 'custom';
-      const start = new Date(dateStr);
-      start.setHours(0,0,0,0);
-      const end = new Date(dateStr);
-      end.setHours(23,59,59,999);
-      this.rangeSubject.next({ start, end });
-    }
-  }
-
-  onPaymentChange(event: any) {
-    this.paymentFilter$.next(event.detail.value);
-  }
-
-  getRange(type: string): {start: Date, end: Date} {
-    const start = new Date();
-    const end = new Date();
-    end.setHours(23, 59, 59, 999);
-
-    if (type === 'today') {
-      start.setHours(0, 0, 0, 0);
-    } else if (type === 'yesterday') {
-      start.setDate(start.getDate() - 1);
-      start.setHours(0, 0, 0, 0);
-      end.setDate(end.getDate() - 1);
-      end.setHours(23, 59, 59, 999);
-    } else if (type === 'week') {
-      start.setDate(start.getDate() - 7);
-      start.setHours(0, 0, 0, 0);
-    }
-    return { start, end };
-  }
-
-  async openReceipt(sale: Sale) {
-    const modal = await this.modalCtrl.create({
-      component: ReceiptModalComponent,
-      componentProps: { sale: sale }
-    });
-    await modal.present();
-  }
-}
-EOF
-
-echo "✅ Filtres intégrés au Header (Plus de popup)."
-echo "👉 Vous avez maintenant les segments et les chips directement sous le titre."
+echo "✅ Correctif appliqué. Le bouton Valider est maintenant épinglé (absolute bottom-0) avec Z-Index 9999."
+echo "👉 Il doit être visible en bas à droite."
