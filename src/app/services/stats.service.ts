@@ -1,47 +1,46 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, collection, query, where, orderBy, limit, collectionData, Timestamp } from '@angular/fire/firestore';
-import { Observable, map } from 'rxjs';
+import { Firestore, collection, query, where, orderBy, limit, getDocs, Timestamp } from '@angular/fire/firestore';
+import { Observable, from, map } from 'rxjs';
 import { Sale } from '../models/sale.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class StatsService {
-
   private firestore: Firestore = inject(Firestore);
-  private salesCollection = collection(this.firestore, 'sales');
 
-  constructor() { }
+  constructor() {}
 
-  /**
-   * Récupère les ventes depuis le début de la journée (00:00)
-   */
+  // Récupérer les ventes d'aujourd'hui
   getTodaySales(): Observable<Sale[]> {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const startOfDay = Timestamp.fromDate(today);
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+    return this.getSalesHistory(start, end);
+  }
 
-    // Requête : Ventes où la date >= aujourd'hui 00h
-    // Note : Nécessite parfois la création d'un index composite dans la console Firebase
+  // Récupérer les ventes récentes (limité à 10)
+  getRecentSales(): Observable<Sale[]> {
+    const salesRef = collection(this.firestore, 'sales');
+    const q = query(salesRef, orderBy('date', 'desc'), limit(10));
+    return from(getDocs(q)).pipe(
+      map(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale)))
+    );
+  }
+
+  // Récupérer l'historique avec filtres de date
+  getSalesHistory(startDate: Date, endDate: Date): Observable<Sale[]> {
+    const salesRef = collection(this.firestore, 'sales');
     const q = query(
-      this.salesCollection,
-      where('date', '>=', startOfDay),
+      salesRef,
+      where('date', '>=', Timestamp.fromDate(startDate)),
+      where('date', '<=', Timestamp.fromDate(endDate)),
       orderBy('date', 'desc')
     );
 
-    return collectionData(q, { idField: 'id' }) as Observable<Sale[]>;
-  }
-
-  /**
-   * Récupère les 5 dernières ventes (pour l'historique rapide)
-   */
-  getRecentSales(): Observable<Sale[]> {
-    const q = query(
-      this.salesCollection,
-      orderBy('date', 'desc'),
-      limit(5)
+    return from(getDocs(q)).pipe(
+      map(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale)))
     );
-    return collectionData(q, { idField: 'id' }) as Observable<Sale[]>;
   }
 }

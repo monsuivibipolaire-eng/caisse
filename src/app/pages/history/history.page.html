@@ -1,13 +1,3 @@
-#!/bin/bash
-
-# Arrêter le script en cas d'erreur
-set -e
-
-echo "🎨 Déplacement des filtres dans l'en-tête (Header)..."
-
-# 1. Mise à jour du HTML (Filtres visibles dans le header)
-echo "📝 Mise à jour de src/app/pages/history/history.page.html..."
-cat > src/app/pages/history/history.page.html <<EOF
 <ion-content [fullscreen]="true" [scrollY]="false" class="bg-slate-50">
   <div class="absolute inset-0 flex flex-col w-full h-full overflow-hidden">
     
@@ -22,7 +12,7 @@ cat > src/app/pages/history/history.page.html <<EOF
 
       <div class="px-5 pb-4 flex flex-col gap-3">
         
-        <ion-segment [value]="paymentFilter$ | async" (ionChange)="onPaymentChange(\$event)" mode="ios" class="h-8">
+        <ion-segment [value]="paymentFilter$ | async" (ionChange)="onPaymentChange($event)" mode="ios" class="h-8">
           <ion-segment-button value="ALL">
             <ion-label class="text-xs font-bold">Tout</ion-label>
           </ion-segment-button>
@@ -112,126 +102,8 @@ cat > src/app/pages/history/history.page.html <<EOF
 
   <ion-modal [keepContentsMounted]="true">
     <ng-template>
-      <ion-datetime id="datetime" presentation="date" (ionChange)="onDateChange(\$event)"></ion-datetime>
+      <ion-datetime id="datetime" presentation="date" (ionChange)="onDateChange($event)"></ion-datetime>
     </ng-template>
   </ion-modal>
 
 </ion-content>
-EOF
-
-# 2. Mise à jour du TS (Simplification)
-echo "🧠 Nettoyage de src/app/pages/history/history.page.ts..."
-cat > src/app/pages/history/history.page.ts <<EOF
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
-import { FormsModule } from '@angular/forms';
-import { 
-  IonContent, IonIcon, IonModal, IonDatetime, IonDatetimeButton, 
-  IonSegment, IonSegmentButton, IonLabel, ModalController 
-} from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import { arrowBackOutline, calendarOutline, receiptOutline, cardOutline, cashOutline } from 'ionicons/icons';
-import { StatsService } from 'src/app/services/stats.service';
-import { Sale } from 'src/app/models/sale.model';
-import { Observable, BehaviorSubject, combineLatest, map, switchMap } from 'rxjs';
-import { ReceiptModalComponent } from 'src/app/components/receipt-modal/receipt-modal.component';
-
-@Component({
-  selector: 'app-history',
-  templateUrl: './history.page.html',
-  standalone: true,
-  imports: [
-    CommonModule, RouterLink, FormsModule,
-    IonContent, IonIcon, IonModal, IonDatetime, IonDatetimeButton,
-    IonSegment, IonSegmentButton, IonLabel
-  ]
-})
-export class HistoryPage implements OnInit {
-
-  // Flux de données
-  rangeSubject = new BehaviorSubject<{start: Date, end: Date}>(this.getRange('today'));
-  paymentFilter$ = new BehaviorSubject<string>('ALL');
-  
-  sales$: Observable<Sale[]>;
-  stats$: Observable<{ totalRevenue: number, count: number }>;
-  
-  currentRange: 'today' | 'yesterday' | 'week' | 'custom' = 'today';
-
-  constructor(private statsService: StatsService, private modalCtrl: ModalController) {
-    addIcons({ arrowBackOutline, calendarOutline, receiptOutline, cardOutline, cashOutline });
-
-    this.sales$ = combineLatest([
-      this.rangeSubject.pipe(
-        switchMap(range => this.statsService.getSalesHistory(range.start, range.end))
-      ),
-      this.paymentFilter$
-    ]).pipe(
-      map(([sales, paymentType]) => {
-        if (paymentType === 'ALL') return sales;
-        return sales.filter(s => s.paymentMethod === paymentType);
-      })
-    );
-
-    this.stats$ = this.sales$.pipe(
-      map(sales => ({
-        totalRevenue: sales.reduce((acc, s) => acc + s.total, 0),
-        count: sales.length
-      }))
-    );
-  }
-
-  ngOnInit() {}
-
-  setRange(type: 'today' | 'yesterday' | 'week') {
-    this.currentRange = type;
-    this.rangeSubject.next(this.getRange(type));
-  }
-
-  onDateChange(event: any) {
-    const dateStr = event.detail.value;
-    if (dateStr) {
-      this.currentRange = 'custom';
-      const start = new Date(dateStr);
-      start.setHours(0,0,0,0);
-      const end = new Date(dateStr);
-      end.setHours(23,59,59,999);
-      this.rangeSubject.next({ start, end });
-    }
-  }
-
-  onPaymentChange(event: any) {
-    this.paymentFilter$.next(event.detail.value);
-  }
-
-  getRange(type: string): {start: Date, end: Date} {
-    const start = new Date();
-    const end = new Date();
-    end.setHours(23, 59, 59, 999);
-
-    if (type === 'today') {
-      start.setHours(0, 0, 0, 0);
-    } else if (type === 'yesterday') {
-      start.setDate(start.getDate() - 1);
-      start.setHours(0, 0, 0, 0);
-      end.setDate(end.getDate() - 1);
-      end.setHours(23, 59, 59, 999);
-    } else if (type === 'week') {
-      start.setDate(start.getDate() - 7);
-      start.setHours(0, 0, 0, 0);
-    }
-    return { start, end };
-  }
-
-  async openReceipt(sale: Sale) {
-    const modal = await this.modalCtrl.create({
-      component: ReceiptModalComponent,
-      componentProps: { sale: sale }
-    });
-    await modal.present();
-  }
-}
-EOF
-
-echo "✅ Filtres intégrés au Header (Plus de popup)."
-echo "👉 Vous avez maintenant les segments et les chips directement sous le titre."
