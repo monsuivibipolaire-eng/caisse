@@ -1,0 +1,87 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-button routerLink="/dashboard">
+        <ion-icon slot="icon-only" name="home-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Caisse</ion-title>
+    <ion-buttons slot="end">
+      <ion-button>
+        <ion-icon slot="start" name="cart-outline"></ion-icon>
+        <ng-container *ngIf="cart$ | async as cart">
+           {{ cart.itemCount }}
+        </ng-container>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="bg-gray-100">
+  <ion-grid class="h-full">
+    <ion-row class="h-full">
+      
+      <ion-col size="12" size-md="7" size-lg="8" class="overflow-y-auto">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-2">
+          <ion-card 
+            *ngFor="let product of products$ | async" 
+            (click)="addToCart(product)"
+            class="m-0 cursor-pointer active:scale-95 transition-transform hover:shadow-lg bg-white">
+            <img [src]="product.imageUrl" class="h-24 w-full object-cover" alt="img" />
+            <ion-card-content class="p-2 text-center">
+              <h3 class="font-bold text-gray-800 text-sm truncate">{{ product.name }}</h3>
+              <p class="text-blue-600 font-bold">{{ product.price | currency:'EUR' }}</p>
+            </ion-card-content>
+          </ion-card>
+        </div>
+      </ion-col>
+
+      <ion-col size="12" size-md="5" size-lg="4" class="bg-white border-l h-full flex flex-col shadow-xl">
+        
+        <div class="p-4 bg-gray-50 border-b">
+          <h2 class="text-xl font-bold flex items-center">
+            Ticket en cours
+          </h2>
+        </div>
+
+        <div class="flex-1 overflow-y-auto">
+          <ng-container *ngIf="cart$ | async as cart">
+            <ion-list lines="full">
+              <ion-item *ngFor="let item of cart.items">
+                <ion-label class="whitespace-normal">
+                  <h2>{{ item.product.name }}</h2>
+                  <p>{{ item.product.price | currency:'EUR' }} x {{ item.quantity }}</p>
+                </ion-label>
+                <div slot="end" class="flex items-center gap-2">
+                  <ion-button fill="clear" color="medium" (click)="decreaseItem(item.product.id!)">
+                    <ion-icon slot="icon-only" name="remove-circle-outline"></ion-icon>
+                  </ion-button>
+                  <span class="font-bold w-4 text-center">{{ item.quantity }}</span>
+                  <ion-button fill="clear" color="primary" (click)="addToCart(item.product)">
+                    <ion-icon slot="icon-only" name="add-circle-outline"></ion-icon>
+                  </ion-button>
+                </div>
+              </ion-item>
+              
+              <div *ngIf="cart.items.length === 0" class="p-8 text-center text-gray-400">
+                <ion-icon name="cart-outline" class="text-6xl mb-2"></ion-icon>
+                <p>Le panier est vide</p>
+              </div>
+            </ion-list>
+          </ng-container>
+        </div>
+
+        <div class="p-4 border-t bg-gray-50" *ngIf="cart$ | async as cart">
+          <div class="flex justify-between items-center mb-4 text-xl font-bold">
+            <span>Total</span>
+            <span class="text-blue-600">{{ cart.total | currency:'EUR' }}</span>
+          </div>
+          <ion-button expand="block" size="large" (click)="checkout()" [disabled]="cart.items.length === 0">
+            ENCAISSER
+          </ion-button>
+        </div>
+
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+</ion-content>

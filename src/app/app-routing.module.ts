@@ -11,6 +11,22 @@ const routes: Routes = [
     redirectTo: 'home',
     pathMatch: 'full'
   },
+  {
+    path: 'dashboard',
+    loadChildren: () => import('./pages/dashboard/dashboard.module').then( m => m.DashboardPageModule)
+  },
+  {
+    path: 'caisse',
+    loadChildren: () => import('./pages/caisse/caisse.module').then( m => m.CaissePageModule)
+  },
+  {
+    path: 'stocks',
+    loadChildren: () => import('./pages/stocks/stocks.module').then( m => m.StocksPageModule)
+  },
+  {
+    path: 'settings',
+    loadChildren: () => import('./pages/settings/settings.module').then( m => m.SettingsPageModule)
+  },
 ];
 
 @NgModule({

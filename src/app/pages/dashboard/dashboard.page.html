@@ -1,0 +1,34 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar color="primary">
+    <ion-title>IonicCaisse</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="bg-gray-100">
+  <div class="flex flex-col h-full justify-center p-4">
+    <div class="grid grid-cols-2 gap-4">
+      
+      <ion-card routerLink="/caisse" button="true" class="m-0 bg-white hover:bg-blue-50">
+        <ion-card-content class="flex flex-col items-center p-6">
+          <ion-icon name="calculator-outline" class="text-6xl text-blue-600 mb-2"></ion-icon>
+          <ion-card-title class="text-lg font-bold">Caisse</ion-card-title>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card routerLink="/stocks" button="true" class="m-0 bg-white hover:bg-green-50">
+        <ion-card-content class="flex flex-col items-center p-6">
+          <ion-icon name="cube-outline" class="text-6xl text-green-600 mb-2"></ion-icon>
+          <ion-card-title class="text-lg font-bold">Stocks</ion-card-title>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card routerLink="/settings" button="true" class="col-span-2 m-0 bg-white hover:bg-gray-50">
+        <ion-card-content class="flex flex-row items-center justify-center p-4">
+          <ion-icon name="settings-outline" class="text-3xl text-gray-600 mr-4"></ion-icon>
+          <ion-card-title class="text-lg font-bold">Paramètres</ion-card-title>
+        </ion-card-content>
+      </ion-card>
+
+    </div>
+  </div>
+</ion-content>
