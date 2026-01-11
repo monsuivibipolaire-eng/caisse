@@ -1,15 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { IonContent, IonIcon, ModalController, ToastController, LoadingController } from '@ionic/angular/standalone';
+import { IonContent, IonIcon, IonSpinner, ModalController, ToastController } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { arrowBackOutline, scanOutline, cartOutline, basketOutline, removeOutline, addOutline, arrowForward, add } from 'ionicons/icons';
+import { arrowBackOutline, scanOutline, cartOutline, basketOutline, removeOutline, addOutline, checkmarkCircleOutline } from 'ionicons/icons';
 import { ProductService } from 'src/app/services/product.service';
 import { CartService } from 'src/app/services/cart.service';
-import { Observable, firstValueFrom, take } from 'rxjs';
+import { Observable, take } from 'rxjs';
 import { Product } from 'src/app/models/product.model';
-import { Cart } from 'src/app/models/cart.model';
-import { Sale } from 'src/app/models/sale.model';
 import { ScanModalComponent } from 'src/app/components/scan-modal/scan-modal.component';
 import { ReceiptModalComponent } from 'src/app/components/receipt-modal/receipt-modal.component';
 
@@ -18,20 +16,22 @@ import { ReceiptModalComponent } from 'src/app/components/receipt-modal/receipt-
   templateUrl: './caisse.page.html',
   styleUrls: ['./caisse.page.scss'],
   standalone: true,
-  imports: [CommonModule, RouterLink, IonContent, IonIcon]
+  imports: [CommonModule, RouterLink, IonContent, IonIcon, IonSpinner]
 })
 export class CaissePage implements OnInit {
+
   products$: Observable<Product[]>;
-  cart$: Observable<Cart>;
+  cart$: Observable<any>;
+  isProcessing = false;
+  isCartExpanded = false; // Pour mobile
 
   constructor(
     private productService: ProductService,
     private cartService: CartService,
     private modalCtrl: ModalController,
-    private toastCtrl: ToastController,
-    private loadingCtrl: LoadingController
+    private toastCtrl: ToastController
   ) {
-    addIcons({ arrowBackOutline, scanOutline, cartOutline, basketOutline, removeOutline, addOutline, arrowForward, add });
+    addIcons({ arrowBackOutline, scanOutline, cartOutline, basketOutline, removeOutline, addOutline, checkmarkCircleOutline });
     this.products$ = this.productService.getProducts();
     this.cart$ = this.cartService.cart$;
   }
@@ -41,42 +41,53 @@ export class CaissePage implements OnInit {
   addToCart(product: Product) { this.cartService.addToCart(product); }
   decreaseItem(id: string) { this.cartService.removeFromCart(id); }
 
+  toggleCartHeight() {
+    // Logique future pour agrandir/réduire le panier sur mobile
+    // Pour l'instant géré par CSS height fixe
+  }
+
   async openScanner() {
     const modal = await this.modalCtrl.create({ component: ScanModalComponent });
     modal.present();
     const { data, role } = await modal.onWillDismiss();
-    if (role === 'scan_success' && data) this.handleScanResult(data);
+    if (role === 'scan_success' && data) {
+      this.handleScanResult(data);
+    }
   }
 
   private handleScanResult(barcode: string) {
     this.products$.pipe(take(1)).subscribe(products => {
       const found = products.find(p => p.barcode === barcode);
-      if (found) { this.addToCart(found); this.presentToast('Ajouté au panier', 'success'); }
-      else { this.presentToast('Produit introuvable', 'warning'); }
+      if (found) {
+        this.addToCart(found);
+        this.presentToast('Ajouté', 'success');
+      } else {
+        this.presentToast('Inconnu', 'warning');
+      }
     });
   }
 
-  async checkout() {
-    const cart = await firstValueFrom(this.cart$);
-    if (!cart || cart.items.length === 0) return;
-    
-    const loading = await this.loadingCtrl.create({ message: 'Traitement...', duration: 1000, spinner: 'crescent' });
-    await loading.present();
-
+  async validateSale() {
+    this.isProcessing = true;
     try {
-      await this.cartService.saveSale('CASH');
-      await loading.dismiss();
-      const sale: Sale = { ...cart, paymentMethod: 'CASH', date: { seconds: Date.now()/1000 } } as any;
-      const modal = await this.modalCtrl.create({ component: ReceiptModalComponent, componentProps: { sale } });
+      const sale = await this.cartService.checkout('ESPECES');
+      const modal = await this.modalCtrl.create({
+        component: ReceiptModalComponent,
+        componentProps: { sale: sale },
+        backdropDismiss: false
+      });
       await modal.present();
-    } catch (e) {
-      await loading.dismiss();
-      this.presentToast('Erreur lors de la vente', 'danger');
+      this.presentToast('Vente OK', 'success');
+    } catch (error) {
+      console.error(error);
+      this.presentToast('Erreur vente', 'danger');
+    } finally {
+      this.isProcessing = false;
     }
   }
 
   async presentToast(msg: string, color: string) {
-    const t = await this.toastCtrl.create({ message: msg, duration: 2000, color, position: 'top', cssClass: 'custom-toast' });
+    const t = await this.toastCtrl.create({ message: msg, duration: 2000, color, position: 'top', cssClass: 'rounded-xl' });
     t.present();
   }
 }

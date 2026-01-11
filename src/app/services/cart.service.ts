@@ -1,9 +1,14 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
-import { Firestore, collection, addDoc, serverTimestamp } from '@angular/fire/firestore';
-import { Cart, CartItem } from '../models/cart.model';
+import { BehaviorSubject, map } from 'rxjs';
 import { Product } from '../models/product.model';
-import { Sale } from '../models/sale.model';
+import { CartItem, Sale } from '../models/sale.model';
+import { Firestore, collection, doc, writeBatch, serverTimestamp } from '@angular/fire/firestore';
+
+export interface CartState {
+  items: CartItem[];
+  total: number;
+  itemCount: number;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -11,78 +16,97 @@ import { Sale } from '../models/sale.model';
 export class CartService {
   
   private firestore: Firestore = inject(Firestore);
-  private salesCollection = collection(this.firestore, 'sales');
-
-  private cartSubject = new BehaviorSubject<Cart>({ items: [], total: 0, itemCount: 0 });
+  
+  private initialState: CartState = { items: [], total: 0, itemCount: 0 };
+  private cartSubject = new BehaviorSubject<CartState>(this.initialState);
+  
   cart$ = this.cartSubject.asObservable();
 
-  constructor() { }
+  constructor() {}
 
-  /** Ajoute un produit au panier local */
+  // Ajouter au panier
   addToCart(product: Product) {
-    const currentCart = this.cartSubject.value;
-    // On clone les items pour éviter les mutations directes
-    const items = [...currentCart.items]; 
-    const existingItem = items.find(i => i.product.id === product.id);
+    const current = this.cartSubject.value;
+    const existingItem = current.items.find(i => i.product.id === product.id);
 
+    let newItems;
     if (existingItem) {
-      existingItem.quantity += 1;
+      existingItem.quantity++;
+      newItems = [...current.items];
     } else {
-      items.push({ product, quantity: 1 });
+      newItems = [...current.items, { product, quantity: 1 }];
     }
 
-    this.recalculate(items);
+    this.updateCart(newItems);
   }
 
-  /** Retire un item ou décrémente sa quantité */
+  // Retirer du panier
   removeFromCart(productId: string) {
-    const currentCart = this.cartSubject.value;
-    let items = [...currentCart.items];
-    const itemIndex = items.findIndex(i => i.product.id === productId);
+    const current = this.cartSubject.value;
+    const existingItem = current.items.find(i => i.product.id === productId);
 
-    if (itemIndex > -1) {
-      const item = items[itemIndex];
-      if (item.quantity > 1) {
-        item.quantity -= 1;
-      } else {
-        items.splice(itemIndex, 1);
-      }
-      this.recalculate(items);
+    if (!existingItem) return;
+
+    let newItems;
+    if (existingItem.quantity > 1) {
+      existingItem.quantity--;
+      newItems = [...current.items];
+    } else {
+      newItems = current.items.filter(i => i.product.id !== productId);
     }
+
+    this.updateCart(newItems);
   }
 
-  /** Vide le panier local */
+  // Vider le panier
   clearCart() {
-    this.cartSubject.next({ items: [], total: 0, itemCount: 0 });
+    this.cartSubject.next(this.initialState);
   }
 
-  /** Envoie le panier vers Firestore (Création de la vente) */
-  async saveSale(paymentMethod: 'CASH' | 'CARD' = 'CASH'): Promise<void> {
-    const currentCart = this.cartSubject.value;
-    
-    if (currentCart.items.length === 0) return;
-
-    const sale: Sale = {
-      items: currentCart.items,
-      total: currentCart.total,
-      itemCount: currentCart.itemCount,
-      paymentMethod: paymentMethod,
-      date: serverTimestamp() // Date serveur pour éviter les fraudes locales
-    };
-
-    try {
-      await addDoc(this.salesCollection, sale);
-      this.clearCart(); // On vide le panier après succès
-    } catch (error) {
-      console.error("Erreur lors de la vente:", error);
-      throw error;
-    }
-  }
-
-  /** Recalcule les totaux */
-  private recalculate(items: CartItem[]) {
-    const total = items.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
-    const itemCount = items.reduce((acc, item) => acc + item.quantity, 0);
+  private updateCart(items: CartItem[]) {
+    const total = items.reduce((acc, i) => acc + (i.product.price * i.quantity), 0);
+    const itemCount = items.reduce((acc, i) => acc + i.quantity, 0);
     this.cartSubject.next({ items, total, itemCount });
+  }
+
+  // --- LE COEUR DU SYSTEME : CHECKOUT ---
+  // Utilise un BATCH pour :
+  // 1. Créer la vente
+  // 2. Mettre à jour les stocks de CHAQUE produit
+  async checkout(paymentMethod: 'ESPECES' | 'CARTE'): Promise<Sale> {
+    const current = this.cartSubject.value;
+    if (current.items.length === 0) throw new Error('Panier vide');
+
+    const batch = writeBatch(this.firestore);
+    
+    // 1. Préparer la Vente
+    const saleRef = doc(collection(this.firestore, 'sales'));
+    const saleData: Sale = {
+      id: saleRef.id,
+      items: current.items,
+      total: current.total,
+      itemCount: current.itemCount,
+      paymentMethod,
+      date: serverTimestamp()
+    };
+    batch.set(saleRef, saleData);
+
+    // 2. Préparer la mise à jour des Stocks
+    current.items.forEach(item => {
+      if (item.product.id) {
+        const productRef = doc(this.firestore, 'products', item.product.id);
+        // On calcule le nouveau stock
+        const newStock = (item.product.stock || 0) - item.quantity;
+        batch.update(productRef, { stock: newStock });
+      }
+    });
+
+    // 3. Exécuter tout en même temps
+    await batch.commit();
+
+    // 4. Vider le panier local
+    this.clearCart();
+
+    return saleData;
   }
 }

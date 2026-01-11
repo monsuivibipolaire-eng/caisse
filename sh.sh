@@ -3,205 +3,228 @@
 # Arrêter le script en cas d'erreur
 set -e
 
-echo "🚑 Réparation du bouton Retour sur la page Stocks..."
+echo "🚑 Correction de la visibilité du bouton Valider (Panier)..."
 
-# 1. Mise à jour de stocks.page.ts
-# Ajout de NavController pour une navigation "Retour" native et fiable
-echo "🧠 Mise à jour de la logique Stocks (Ajout NavController)..."
-cat > src/app/pages/stocks/stocks.page.ts <<EOF
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { IonContent, IonIcon, IonItemSliding, IonItem, IonItemOptions, IonItemOption, ModalController, NavController } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import { arrowBackOutline, addOutline, cubeOutline, trashOutline, imageOutline, barcodeOutline, searchOutline, alertCircleOutline, filterOutline } from 'ionicons/icons';
-import { ProductService } from 'src/app/services/product.service';
-import { Observable, BehaviorSubject, combineLatest } from 'rxjs';
-import { map } from 'rxjs/operators';
-import { Product } from 'src/app/models/product.model';
-import { ProductModalComponent } from 'src/app/components/product-modal/product-modal.component';
-
-@Component({
-  selector: 'app-stocks',
-  templateUrl: './stocks.page.html',
-  styleUrls: ['./stocks.page.scss'],
-  standalone: true,
-  imports: [CommonModule, FormsModule, IonContent, IonIcon, IonItemSliding, IonItem, IonItemOptions, IonItemOption]
-})
-export class StocksPage implements OnInit {
-  
-  // Flux de données
-  private productsSource$ = this.productService.getProducts();
-  
-  // Flux de critères de filtre
-  searchTerm$ = new BehaviorSubject<string>('');
-  categoryFilter$ = new BehaviorSubject<string>('Tout');
-
-  // Résultat combiné
-  filteredProducts$: Observable<Product[]>;
-
-  // Liste des catégories
-  categories = ['Tout', 'Stock Faible', 'Boissons', 'Snack', 'Viennoiserie', 'Divers'];
-
-  constructor(
-    private productService: ProductService, 
-    private modalCtrl: ModalController,
-    private navCtrl: NavController // <--- Injection pour la navigation
-  ) {
-    addIcons({ arrowBackOutline, addOutline, cubeOutline, trashOutline, imageOutline, barcodeOutline, searchOutline, alertCircleOutline, filterOutline });
-    
-    // Logique de filtrage (RxJS)
-    this.filteredProducts$ = combineLatest([
-      this.productsSource$,
-      this.searchTerm$,
-      this.categoryFilter$
-    ]).pipe(
-      map(([products, term, category]) => {
-        let filtered = products.filter(p => 
-          p.name.toLowerCase().includes(term.toLowerCase()) || 
-          (p.barcode && p.barcode.includes(term))
-        );
-
-        if (category === 'Stock Faible') {
-          filtered = filtered.filter(p => p.stock <= 5);
-        } else if (category !== 'Tout') {
-          filtered = filtered.filter(p => p.category === category);
-        }
-
-        return filtered;
-      })
-    );
-  }
-
-  ngOnInit() {}
-
-  // Navigation Retour Robuste
-  goBack() {
-    this.navCtrl.navigateBack('/dashboard');
-  }
-
-  onSearch(event: any) {
-    this.searchTerm$.next(event.target.value);
-  }
-
-  setCategory(cat: string) {
-    this.categoryFilter$.next(cat);
-  }
-
-  async openAddModal() {
-    const modal = await this.modalCtrl.create({ component: ProductModalComponent });
-    modal.present();
-    const { data, role } = await modal.onWillDismiss();
-    if (role === 'confirm' && data) {
-      this.productService.addProduct(data);
-    }
-  }
-
-  deleteProduct(id: string) {
-    this.productService.deleteProduct(id);
-  }
-}
-EOF
-
-# 2. Mise à jour de stocks.page.html
-# Binding explicite (click)="goBack()" sur le bouton
-echo "🎨 Mise à jour du template HTML (Fix Bouton Retour)..."
-cat > src/app/pages/stocks/stocks.page.html <<EOF
+# Mise à jour de caisse.page.html
+# FIX : Ajout de 'pb-safe' et ajustement des hauteurs pour éviter que le bouton soit caché
+cat > src/app/pages/caisse/caisse.page.html <<EOF
 <ion-content [fullscreen]="true" [scrollY]="false" class="bg-slate-50">
   
-  <div class="absolute inset-0 flex flex-col w-full h-full overflow-hidden">
+  <div class="absolute inset-0 flex flex-col md:flex-row w-full h-full overflow-hidden">
     
-    <div class="bg-white px-6 pt-4 pb-2 border-b border-slate-50 flex justify-between items-center shrink-0 z-20">
+    <div class="flex-1 flex flex-col h-full relative border-r border-slate-200">
       
-      <div class="flex items-center gap-3">
-        <button (click)="goBack()" class="h-10 w-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-600 tap-effect hover:bg-slate-100 transition-colors z-30">
-          <ion-icon name="arrow-back-outline" class="text-xl"></ion-icon>
-        </button>
-        <h1 (click)="goBack()" class="font-bold text-lg text-slate-800 cursor-pointer">Gestion Stock</h1>
-      </div>
-      
-      <button (click)="openAddModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-bold shadow-lg shadow-indigo-200 tap-effect active:scale-95 transition-transform">
-        <ion-icon name="add-outline" class="text-lg"></ion-icon>
-        <span class="hidden sm:inline">Nouveau</span>
-      </button>
-    </div>
-
-    <div class="bg-white pb-3 px-4 shadow-sm z-10 shrink-0 flex flex-col gap-3">
-      
-      <div class="relative bg-slate-100 rounded-xl overflow-hidden flex items-center h-12 border border-slate-100 focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-100 transition-all">
-        <div class="pl-4 text-slate-400">
-          <ion-icon name="search-outline" class="text-xl"></ion-icon>
-        </div>
-        <input 
-          type="text" 
-          placeholder="Rechercher nom ou code-barres..." 
-          class="w-full h-full bg-transparent border-none outline-none px-3 text-slate-700 font-medium placeholder-slate-400"
-          (input)="onSearch(\$event)"
-        >
-      </div>
-
-      <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-        <ng-container *ngFor="let cat of categories">
-          <button 
-            (click)="setCategory(cat)"
-            [class]="(categoryFilter$ | async) === cat 
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' 
-              : 'bg-white text-slate-600 border border-slate-200'"
-            class="whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold transition-all tap-effect flex items-center gap-1">
-            <ion-icon *ngIf="cat === 'Stock Faible'" name="alert-circle-outline" class="text-base"></ion-icon>
-            {{ cat }}
+      <div class="px-5 py-3 bg-white border-b border-slate-100 flex justify-between items-center z-20 shrink-0 shadow-sm">
+        <div class="flex items-center gap-3">
+          <button routerLink="/dashboard" class="h-10 w-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-600 tap-effect hover:bg-slate-100 transition-colors">
+            <ion-icon name="arrow-back-outline" class="text-xl"></ion-icon>
           </button>
-        </ng-container>
-      </div>
-    </div>
-
-    <div class="flex-1 overflow-y-auto p-4 space-y-3 pb-24 bg-slate-50">
-      <ng-container *ngIf="filteredProducts$ | async as products">
-        
-        <div *ngIf="products.length === 0" class="flex flex-col items-center justify-center h-48 text-slate-400 gap-2">
-          <ion-icon name="search-outline" class="text-4xl opacity-50"></ion-icon>
-          <p class="font-medium text-sm">Aucun produit trouvé</p>
+          <h1 class="font-bold text-lg text-slate-800">Caisse</h1>
         </div>
+        
+        <button (click)="openScanner()" class="bg-slate-800 text-white px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-bold shadow-lg shadow-slate-300 tap-effect active:scale-95 transition-transform">
+          <ion-icon name="scan-outline" class="text-lg"></ion-icon>
+          <span class="hidden sm:inline">Scanner</span>
+        </button>
+      </div>
 
-        <ion-item-sliding *ngFor="let product of products" class="group rounded-2xl overflow-hidden bg-transparent shadow-sm hover:shadow-md transition-shadow">
-          <ion-item lines="none" class="bg-white border border-slate-100 rounded-2xl p-0">
-            <div class="flex items-center w-full py-3 px-1 pl-3">
-              <div class="h-14 w-14 rounded-xl bg-slate-50 overflow-hidden border border-slate-100 shrink-0 relative">
+      <div class="flex-1 overflow-y-auto p-4 bg-slate-50 pb-[60vh] md:pb-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <ng-container *ngFor="let product of products$ | async">
+            <div (click)="addToCart(product)"
+                 class="bg-white rounded-2xl p-2 shadow-sm border border-slate-100 group tap-effect cursor-pointer flex flex-col h-48 active:scale-95 transition-transform">
+              
+              <div class="h-28 w-full bg-slate-50 rounded-xl overflow-hidden relative mb-2">
                  <img [src]="product.imageUrl" class="h-full w-full object-cover" loading="lazy" />
-                 <div *ngIf="!product.imageUrl" class="absolute inset-0 flex items-center justify-center text-slate-300">
-                   <ion-icon name="image-outline"></ion-icon>
+                 <div class="absolute bottom-1 right-1 bg-white/90 backdrop-blur px-2 py-0.5 rounded-md text-[10px] font-bold text-slate-900 shadow-sm">
+                   {{ product.price | currency:'EUR':'symbol':'1.2-2' }}
                  </div>
               </div>
-              <div class="ml-4 flex-1 min-w-0 pr-3">
-                <div class="flex justify-between items-start">
-                  <h3 class="font-bold text-slate-800 text-sm truncate pr-2">{{ product.name }}</h3>
-                  <p class="font-bold text-slate-900 text-sm">{{ product.price | currency:'EUR' }}</p>
-                </div>
-                <div class="flex flex-wrap items-center gap-2 mt-1.5">
-                  <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md font-bold uppercase tracking-wide">{{ product.category }}</span>
-                  <div class="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border"
-                        [ngClass]="{
-                          'bg-red-50 text-red-600 border-red-100': product.stock <= 5,
-                          'bg-emerald-50 text-emerald-600 border-emerald-100': product.stock > 5
-                        }">
-                    <ion-icon *ngIf="product.stock <= 5" name="alert-circle-outline"></ion-icon>
-                    Stock: {{ product.stock }}
-                  </div>
-                </div>
+              
+              <div class="flex-1 flex flex-col px-1">
+                 <h3 class="font-bold text-slate-700 text-xs leading-tight line-clamp-2">{{ product.name }}</h3>
+                 <p class="text-[9px] text-slate-400 font-bold uppercase mt-auto">{{ product.category }}</p>
               </div>
             </div>
-          </ion-item>
-          <ion-item-options side="end">
-            <ion-item-option color="danger" (click)="deleteProduct(product.id!)" class="pl-6 pr-6">
-              <ion-icon slot="icon-only" name="trash-outline" class="text-xl"></ion-icon>
-            </ion-item-option>
-          </ion-item-options>
-        </ion-item-sliding>
-      </ng-container>
+          </ng-container>
+        </div>
+      </div>
     </div>
 
+    <div class="w-full md:w-[420px] bg-white shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-50 flex flex-col fixed md:relative bottom-0 rounded-t-[2rem] md:rounded-none h-[50vh] md:h-full transition-transform duration-300">
+      
+      <div class="md:hidden w-full flex justify-center pt-3 pb-1 shrink-0" (click)="toggleCartHeight()">
+         <div class="w-12 h-1.5 bg-slate-200 rounded-full"></div>
+      </div>
+
+      <div class="px-6 py-3 flex justify-between items-center border-b border-dashed border-slate-200 shrink-0 bg-white">
+        <div class="flex items-center gap-2">
+          <div class="bg-indigo-50 p-2 rounded-lg text-indigo-600">
+            <ion-icon name="cart-outline" class="text-xl"></ion-icon>
+          </div>
+          <span class="font-bold text-slate-800">Panier</span>
+        </div>
+        <div class="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold">
+          <ng-container *ngIf="cart$ | async as cart">{{ cart.itemCount }} items</ng-container>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50">
+        <ng-container *ngIf="cart$ | async as cart">
+          
+          <div *ngIf="cart.items.length === 0" class="h-full flex flex-col items-center justify-center text-slate-300 gap-3">
+            <ion-icon name="basket-outline" class="text-5xl opacity-40"></ion-icon>
+            <p class="text-sm font-medium">Panier vide</p>
+          </div>
+
+          <div *ngFor="let item of cart.items" class="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+            <div class="flex-1 min-w-0 mr-3">
+              <h4 class="font-bold text-slate-700 text-sm truncate">{{ item.product.name }}</h4>
+              <div class="text-xs text-indigo-600 font-bold mt-0.5">
+                {{ item.product.price | currency:'EUR' }} 
+                <span class="text-slate-400 font-normal">x {{ item.quantity }}</span>
+              </div>
+            </div>
+            
+            <div class="flex items-center bg-slate-50 rounded-lg h-8 border border-slate-200">
+              <button (click)="decreaseItem(item.product.id!)" class="w-8 h-full flex items-center justify-center text-slate-500 hover:bg-white rounded-l-lg tap-effect">
+                <ion-icon name="remove-outline"></ion-icon>
+              </button>
+              <span class="w-6 text-center text-xs font-bold text-slate-800">{{ item.quantity }}</span>
+              <button (click)="addToCart(item.product)" class="w-8 h-full flex items-center justify-center text-slate-500 hover:bg-white rounded-r-lg tap-effect">
+                <ion-icon name="add-outline"></ion-icon>
+              </button>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <div class="p-5 bg-white border-t border-slate-100 shrink-0 pb-safe md:pb-5" 
+           style="padding-bottom: max(1.5rem, env(safe-area-inset-bottom) + 1rem);"
+           *ngIf="cart$ | async as cart">
+        
+        <div class="flex justify-between items-end mb-4">
+          <div class="flex flex-col">
+            <span class="text-xs text-slate-400 font-bold uppercase">Total</span>
+          </div>
+          <span class="text-3xl font-extrabold text-slate-900 tracking-tight">{{ cart.total | currency:'EUR':'symbol':'1.2-2' }}</span>
+        </div>
+        
+        <button (click)="validateSale()" 
+                [disabled]="cart.items.length === 0 || isProcessing"
+                class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold shadow-xl shadow-indigo-200 flex items-center justify-center gap-3 tap-effect disabled:opacity-50 disabled:shadow-none transition-all hover:bg-indigo-700 active:scale-95 mb-2">
+          
+          <span *ngIf="!isProcessing" class="flex items-center gap-2">
+            VALIDER <ion-icon name="checkmark-circle-outline" class="text-xl"></ion-icon>
+          </span>
+          
+          <span *ngIf="isProcessing" class="flex items-center gap-2">
+             <ion-spinner name="crescent" color="light" class="h-5 w-5"></ion-spinner>
+          </span>
+        </button>
+
+      </div>
+    </div>
   </div>
 </ion-content>
 EOF
 
-echo "✅ Correctif appliqué : Le bouton Retour fonctionne maintenant correctement."
+# Mise à jour TS (Petite fonction pour agrandir le panier sur mobile)
+cat > src/app/pages/caisse/caisse.page.ts <<EOF
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import { IonContent, IonIcon, IonSpinner, ModalController, ToastController } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { arrowBackOutline, scanOutline, cartOutline, basketOutline, removeOutline, addOutline, checkmarkCircleOutline } from 'ionicons/icons';
+import { ProductService } from 'src/app/services/product.service';
+import { CartService } from 'src/app/services/cart.service';
+import { Observable, take } from 'rxjs';
+import { Product } from 'src/app/models/product.model';
+import { ScanModalComponent } from 'src/app/components/scan-modal/scan-modal.component';
+import { ReceiptModalComponent } from 'src/app/components/receipt-modal/receipt-modal.component';
+
+@Component({
+  selector: 'app-caisse',
+  templateUrl: './caisse.page.html',
+  styleUrls: ['./caisse.page.scss'],
+  standalone: true,
+  imports: [CommonModule, RouterLink, IonContent, IonIcon, IonSpinner]
+})
+export class CaissePage implements OnInit {
+
+  products$: Observable<Product[]>;
+  cart$: Observable<any>;
+  isProcessing = false;
+  isCartExpanded = false; // Pour mobile
+
+  constructor(
+    private productService: ProductService,
+    private cartService: CartService,
+    private modalCtrl: ModalController,
+    private toastCtrl: ToastController
+  ) {
+    addIcons({ arrowBackOutline, scanOutline, cartOutline, basketOutline, removeOutline, addOutline, checkmarkCircleOutline });
+    this.products$ = this.productService.getProducts();
+    this.cart$ = this.cartService.cart$;
+  }
+
+  ngOnInit() {}
+
+  addToCart(product: Product) { this.cartService.addToCart(product); }
+  decreaseItem(id: string) { this.cartService.removeFromCart(id); }
+
+  toggleCartHeight() {
+    // Logique future pour agrandir/réduire le panier sur mobile
+    // Pour l'instant géré par CSS height fixe
+  }
+
+  async openScanner() {
+    const modal = await this.modalCtrl.create({ component: ScanModalComponent });
+    modal.present();
+    const { data, role } = await modal.onWillDismiss();
+    if (role === 'scan_success' && data) {
+      this.handleScanResult(data);
+    }
+  }
+
+  private handleScanResult(barcode: string) {
+    this.products$.pipe(take(1)).subscribe(products => {
+      const found = products.find(p => p.barcode === barcode);
+      if (found) {
+        this.addToCart(found);
+        this.presentToast('Ajouté', 'success');
+      } else {
+        this.presentToast('Inconnu', 'warning');
+      }
+    });
+  }
+
+  async validateSale() {
+    this.isProcessing = true;
+    try {
+      const sale = await this.cartService.checkout('ESPECES');
+      const modal = await this.modalCtrl.create({
+        component: ReceiptModalComponent,
+        componentProps: { sale: sale },
+        backdropDismiss: false
+      });
+      await modal.present();
+      this.presentToast('Vente OK', 'success');
+    } catch (error) {
+      console.error(error);
+      this.presentToast('Erreur vente', 'danger');
+    } finally {
+      this.isProcessing = false;
+    }
+  }
+
+  async presentToast(msg: string, color: string) {
+    const t = await this.toastCtrl.create({ message: msg, duration: 2000, color, position: 'top', cssClass: 'rounded-xl' });
+    t.present();
+  }
+}
+EOF
+
+echo "✅ Bouton Valider remonté et sécurisé pour mobile."
+echo "👉 Le bas de page inclut maintenant la zone de sécurité (Safe Area)."

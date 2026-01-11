@@ -1,10 +1,15 @@
-import { CartItem } from './cart.model';
+import { Product } from './product.model';
+
+export interface CartItem {
+  product: Product;
+  quantity: number;
+}
 
 export interface Sale {
   id?: string;
   items: CartItem[];
   total: number;
   itemCount: number;
-  date: any; // Timestamp Firestore
-  paymentMethod: 'CASH' | 'CARD';
+  paymentMethod: 'ESPECES' | 'CARTE';
+  date: any; // Timestamp Firebase
 }
