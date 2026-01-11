@@ -3,9 +3,9 @@
 # Arrêter le script en cas d'erreur
 set -e
 
-echo "🛡️ Application du layout 'Blindé' pour le Panier..."
+echo "🛡️ Correction finale du Footer Panier (Responsive & Desktop)..."
 
-# Réécriture complète de la structure du Panier dans caisse.page.html
+# Réécriture de caisse.page.html avec le Footer universel
 cat > src/app/pages/caisse/caisse.page.html <<EOF
 <ion-content [fullscreen]="true" [scrollY]="false" class="bg-slate-50">
   
@@ -13,13 +13,24 @@ cat > src/app/pages/caisse/caisse.page.html <<EOF
     
     <div class="flex-1 flex flex-col h-full relative border-r border-slate-200">
       
-      <div class="px-5 py-3 bg-white border-b border-slate-100 flex justify-between items-center z-20 shrink-0 shadow-sm h-16">
+      <div class="px-4 py-3 bg-white border-b border-slate-100 flex justify-between items-center z-20 shrink-0 shadow-sm h-16">
+        
         <div class="flex items-center gap-3">
           <button routerLink="/dashboard" class="h-10 w-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-600 tap-effect hover:bg-slate-100 transition-colors">
             <ion-icon name="arrow-back-outline" class="text-xl"></ion-icon>
           </button>
-          <h1 class="font-bold text-lg text-slate-800">Caisse</h1>
+          
+          <div class="flex items-center bg-indigo-50 rounded-xl px-2 h-10 border border-indigo-100">
+             <ion-icon name="person-outline" class="text-indigo-500 mr-2"></ion-icon>
+             <ion-select [(ngModel)]="currentStaffId" interface="popover" class="font-bold text-indigo-700 text-sm max-w-[120px]" (ionChange)="updateCurrentStaffName()">
+               <ion-select-option value="COMPTOIR">Comptoir</ion-select-option>
+               <ng-container *ngFor="let s of staffList$ | async">
+                 <ion-select-option [value]="s.id">{{ s.name }}</ion-select-option>
+               </ng-container>
+             </ion-select>
+          </div>
         </div>
+        
         <button (click)="openScanner()" class="bg-slate-800 text-white px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-bold shadow-lg shadow-slate-300 tap-effect active:scale-95 transition-transform">
           <ion-icon name="scan-outline" class="text-lg"></ion-icon>
           <span class="hidden sm:inline">Scanner</span>
@@ -31,14 +42,12 @@ cat > src/app/pages/caisse/caisse.page.html <<EOF
           <ng-container *ngFor="let product of products$ | async">
             <div (click)="addToCart(product)"
                  class="bg-white rounded-2xl p-2 shadow-sm border border-slate-100 group tap-effect cursor-pointer flex flex-col h-48 active:scale-95 transition-transform">
-              
               <div class="h-28 w-full bg-slate-50 rounded-xl overflow-hidden relative mb-2">
                  <img [src]="product.imageUrl" class="h-full w-full object-cover" loading="lazy" />
                  <div class="absolute bottom-1 right-1 bg-white/90 backdrop-blur px-2 py-0.5 rounded-md text-[10px] font-bold text-slate-900 shadow-sm">
                    {{ product.price | currency:'EUR':'symbol':'1.2-2' }}
                  </div>
               </div>
-              
               <div class="flex-1 flex flex-col px-1">
                  <h3 class="font-bold text-slate-700 text-xs leading-tight line-clamp-2">{{ product.name }}</h3>
                  <p class="text-[9px] text-slate-400 font-bold uppercase mt-auto">{{ product.category }}</p>
@@ -79,25 +88,20 @@ cat > src/app/pages/caisse/caisse.page.html <<EOF
                 <span class="text-slate-400 font-normal">x {{ item.quantity }}</span>
               </div>
             </div>
-            
             <div class="flex items-center bg-slate-50 rounded-lg h-8 border border-slate-200">
-              <button (click)="decreaseItem(item.product.id!)" class="w-8 h-full flex items-center justify-center text-slate-500 hover:bg-white rounded-l-lg tap-effect">
-                <ion-icon name="remove-outline"></ion-icon>
-              </button>
+              <button (click)="decreaseItem(item.product.id!)" class="w-8 h-full flex items-center justify-center text-slate-500 hover:bg-white rounded-l-lg tap-effect"><ion-icon name="remove-outline"></ion-icon></button>
               <span class="w-6 text-center text-xs font-bold text-slate-800">{{ item.quantity }}</span>
-              <button (click)="addToCart(item.product)" class="w-8 h-full flex items-center justify-center text-slate-500 hover:bg-white rounded-r-lg tap-effect">
-                <ion-icon name="add-outline"></ion-icon>
-              </button>
+              <button (click)="addToCart(item.product)" class="w-8 h-full flex items-center justify-center text-slate-500 hover:bg-white rounded-r-lg tap-effect"><ion-icon name="add-outline"></ion-icon></button>
             </div>
           </div>
         </ng-container>
       </div>
 
-      <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-5 z-[9999]"
+      <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-5 z-[9999] flex flex-col gap-3"
            style="padding-bottom: max(1.5rem, env(safe-area-inset-bottom) + 1rem);">
         
         <ng-container *ngIf="cart$ | async as cart">
-          <div class="flex justify-between items-end mb-3">
+          <div class="flex justify-between items-end">
             <div class="flex flex-col">
               <span class="text-xs text-slate-400 font-bold uppercase">Total TTC</span>
             </div>
@@ -107,9 +111,7 @@ cat > src/app/pages/caisse/caisse.page.html <<EOF
           <button (click)="validateSale()" 
                   [disabled]="cart.items.length === 0 || isProcessing"
                   class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold shadow-xl shadow-indigo-200 flex items-center justify-center gap-3 tap-effect disabled:opacity-50 disabled:shadow-none transition-all hover:bg-indigo-700 active:scale-95">
-            <span *ngIf="!isProcessing" class="flex items-center gap-2">
-              VALIDER <ion-icon name="checkmark-circle-outline" class="text-xl"></ion-icon>
-            </span>
+            <span *ngIf="!isProcessing" class="flex items-center gap-2">VALIDER <ion-icon name="checkmark-circle-outline" class="text-xl"></ion-icon></span>
             <span *ngIf="isProcessing">Traitement...</span>
           </button>
         </ng-container>
@@ -120,5 +122,4 @@ cat > src/app/pages/caisse/caisse.page.html <<EOF
 </ion-content>
 EOF
 
-echo "✅ Correctif appliqué. Le bouton Valider est maintenant épinglé (absolute bottom-0) avec Z-Index 9999."
-echo "👉 Il doit être visible en bas à droite."
+echo "✅ Footer Panier fixé : Il s'affiche maintenant sur Mobile ET Desktop sans distinction."

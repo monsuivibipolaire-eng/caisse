@@ -1,5 +1,4 @@
 <ion-content [fullscreen]="true" [scrollY]="false" class="bg-slate-50">
-  
   <div class="absolute inset-0 flex flex-col w-full h-full overflow-hidden">
     
     <div class="bg-white px-6 py-4 border-b border-slate-100 flex justify-between items-center z-20 shrink-0 shadow-sm">
@@ -9,7 +8,6 @@
         </button>
         <h1 class="font-bold text-lg text-slate-800">Paramètres</h1>
       </div>
-      
       <button (click)="save()" [disabled]="isSaving" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 text-sm font-bold shadow-lg shadow-indigo-200 tap-effect active:scale-95 transition-transform disabled:opacity-50">
         <ion-icon name="save-outline" class="text-lg"></ion-icon>
         <span class="hidden sm:inline">{{ isSaving ? '...' : 'Sauvegarder' }}</span>
@@ -23,12 +21,10 @@
           <ion-icon name="storefront-outline"></ion-icon> Identité du Magasin
         </h2>
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          
           <div class="p-4 border-b border-slate-50">
             <label class="block text-xs font-bold text-indigo-600 uppercase mb-1">Nom de la boutique</label>
             <input [(ngModel)]="config.name" type="text" class="w-full text-lg font-bold text-slate-800 bg-transparent outline-none placeholder-slate-300" placeholder="Ma Boutique">
           </div>
-
           <div class="grid grid-cols-1 md:grid-cols-2">
             <div class="p-4 border-b md:border-b-0 md:border-r border-slate-50">
               <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Téléphone</label>
@@ -37,7 +33,6 @@
                 <input [(ngModel)]="config.phone" type="tel" class="w-full font-medium text-slate-700 bg-transparent outline-none placeholder-slate-300" placeholder="+33 6...">
               </div>
             </div>
-            
             <div class="p-4 border-b md:border-b-0 border-slate-50">
               <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Email</label>
               <div class="flex items-center gap-2">
@@ -46,16 +41,28 @@
               </div>
             </div>
           </div>
-
           <div class="p-4 border-t border-slate-50">
             <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Adresse Complète</label>
             <textarea [(ngModel)]="config.address" rows="3" class="w-full font-medium text-slate-700 bg-transparent outline-none placeholder-slate-300 resize-none leading-relaxed" placeholder="123 Rue du Commerce, 75000 Paris"></textarea>
           </div>
+        </div>
+      </div>
 
-          <div class="p-4 border-t border-slate-50 bg-slate-50/50">
-             <label class="block text-xs font-bold text-slate-400 uppercase mb-1">SIRET / Mat. Fiscale</label>
-             <input [(ngModel)]="config.siret" type="text" class="w-full font-mono text-sm text-slate-600 bg-transparent outline-none placeholder-slate-300" placeholder="000 000 000 00000">
+      <div>
+        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 ml-1 flex items-center gap-2">
+          <ion-icon name="people-outline"></ion-icon> Gestion d'Équipe
+        </h2>
+        <div routerLink="/staff" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 flex items-center justify-between tap-effect cursor-pointer group">
+          <div class="flex items-center gap-3">
+             <div class="h-10 w-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center">
+               <ion-icon name="people-outline"></ion-icon>
+             </div>
+             <div>
+               <h3 class="font-bold text-slate-800">Gérer le personnel</h3>
+               <p class="text-xs text-slate-400">Ajouter des serveurs, caissiers...</p>
+             </div>
           </div>
+          <ion-icon name="chevron-forward-outline" class="text-slate-300 group-hover:text-indigo-600 transition-colors"></ion-icon>
         </div>
       </div>
 
@@ -64,13 +71,10 @@
           <ion-icon name="receipt-outline"></ion-icon> Ticket & Fiscalité
         </h2>
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          
           <div class="p-4 border-b border-slate-50">
             <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Message de pied de page</label>
             <input [(ngModel)]="config.footerMessage" type="text" class="w-full font-medium text-slate-700 bg-transparent outline-none placeholder-slate-300" placeholder="Merci de votre visite !">
-            <p class="text-[10px] text-slate-400 mt-1">Apparaît tout en bas du ticket de caisse.</p>
           </div>
-
           <div class="grid grid-cols-2">
             <div class="p-4 border-r border-slate-50">
               <label class="block text-xs font-bold text-slate-400 uppercase mb-1">TVA par défaut (%)</label>
@@ -91,19 +95,13 @@
         <div class="bg-white rounded-2xl shadow-sm border border-red-100 overflow-hidden p-4 flex items-center justify-between">
           <div>
             <h3 class="font-bold text-slate-700 text-sm">Réinitialiser les données locales</h3>
-            <p class="text-xs text-slate-400 mt-1">Efface le cache (panier en cours, préférences)</p>
+            <p class="text-xs text-slate-400 mt-1">Efface le cache</p>
           </div>
           <button (click)="resetCache()" class="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-xs font-bold border border-red-100 tap-effect">
             Effacer
           </button>
         </div>
       </div>
-      
-      <div class="text-center text-xs text-slate-300 py-4">
-        <p>IonicCaisse v2.0.0 (Standalone)</p>
-        <p class="mt-1">ID: {{ config.siret || 'N/A' }}</p>
-      </div>
-
     </div>
   </div>
 </ion-content>

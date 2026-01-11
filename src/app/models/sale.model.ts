@@ -11,5 +11,8 @@ export interface Sale {
   total: number;
   itemCount: number;
   paymentMethod: 'ESPECES' | 'CARTE';
-  date: any; // Timestamp Firebase
+  date: any;
+  // Nouveaux champs
+  staffId: string;
+  staffName: string;
 }

@@ -1,13 +1,19 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { IonContent, IonIcon, IonSpinner, ModalController, ToastController } from '@ionic/angular/standalone';
+import { FormsModule } from '@angular/forms';
+import { 
+  IonContent, IonIcon, IonSpinner, ModalController, ToastController, 
+  IonSelect, IonSelectOption 
+} from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { arrowBackOutline, scanOutline, cartOutline, basketOutline, removeOutline, addOutline, checkmarkCircleOutline } from 'ionicons/icons';
+import { arrowBackOutline, scanOutline, cartOutline, basketOutline, removeOutline, addOutline, checkmarkCircleOutline, personOutline } from 'ionicons/icons';
 import { ProductService } from 'src/app/services/product.service';
 import { CartService } from 'src/app/services/cart.service';
+import { StaffService } from 'src/app/services/staff.service';
 import { Observable, take } from 'rxjs';
 import { Product } from 'src/app/models/product.model';
+import { Staff } from 'src/app/models/staff.model';
 import { ScanModalComponent } from 'src/app/components/scan-modal/scan-modal.component';
 import { ReceiptModalComponent } from 'src/app/components/receipt-modal/receipt-modal.component';
 
@@ -16,34 +22,49 @@ import { ReceiptModalComponent } from 'src/app/components/receipt-modal/receipt-
   templateUrl: './caisse.page.html',
   styleUrls: ['./caisse.page.scss'],
   standalone: true,
-  imports: [CommonModule, RouterLink, IonContent, IonIcon, IonSpinner]
+  imports: [CommonModule, RouterLink, FormsModule, IonContent, IonIcon, IonSpinner, IonSelect, IonSelectOption]
 })
 export class CaissePage implements OnInit {
 
   products$: Observable<Product[]>;
   cart$: Observable<any>;
+  staffList$: Observable<Staff[]>;
+  
   isProcessing = false;
-  isCartExpanded = false; // Pour mobile
+  
+  // Gestion du personnel
+  currentStaffId = 'COMPTOIR';
+  currentStaffName = 'Comptoir';
+  private allStaff: Staff[] = [];
 
   constructor(
     private productService: ProductService,
     private cartService: CartService,
+    private staffService: StaffService,
     private modalCtrl: ModalController,
     private toastCtrl: ToastController
   ) {
-    addIcons({ arrowBackOutline, scanOutline, cartOutline, basketOutline, removeOutline, addOutline, checkmarkCircleOutline });
+    addIcons({ arrowBackOutline, scanOutline, cartOutline, basketOutline, removeOutline, addOutline, checkmarkCircleOutline, personOutline });
     this.products$ = this.productService.getProducts();
     this.cart$ = this.cartService.cart$;
+    this.staffList$ = this.staffService.getStaff();
   }
 
-  ngOnInit() {}
+  ngOnInit() {
+    // S'abonner pour avoir la liste en local pour retrouver le nom facilement
+    this.staffList$.subscribe(list => this.allStaff = list);
+  }
 
   addToCart(product: Product) { this.cartService.addToCart(product); }
   decreaseItem(id: string) { this.cartService.removeFromCart(id); }
 
-  toggleCartHeight() {
-    // Logique future pour agrandir/réduire le panier sur mobile
-    // Pour l'instant géré par CSS height fixe
+  updateCurrentStaffName() {
+    if (this.currentStaffId === 'COMPTOIR') {
+      this.currentStaffName = 'Comptoir';
+    } else {
+      const found = this.allStaff.find(s => s.id === this.currentStaffId);
+      this.currentStaffName = found ? found.name : 'Inconnu';
+    }
   }
 
   async openScanner() {
@@ -70,7 +91,11 @@ export class CaissePage implements OnInit {
   async validateSale() {
     this.isProcessing = true;
     try {
-      const sale = await this.cartService.checkout('ESPECES');
+      // Passer le staff sélectionné à la méthode checkout
+      const staffInfo = { id: this.currentStaffId, name: this.currentStaffName };
+      
+      const sale = await this.cartService.checkout('ESPECES', staffInfo);
+      
       const modal = await this.modalCtrl.create({
         component: ReceiptModalComponent,
         componentProps: { sale: sale },
@@ -87,7 +112,7 @@ export class CaissePage implements OnInit {
   }
 
   async presentToast(msg: string, color: string) {
-    const t = await this.toastCtrl.create({ message: msg, duration: 2000, color, position: 'top', cssClass: 'rounded-xl' });
+    const t = await this.toastCtrl.create({ message: msg, duration: 2000, color, position: 'top' });
     t.present();
   }
 }
