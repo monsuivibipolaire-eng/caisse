@@ -1,26 +1,3 @@
-#!/bin/bash
-
-# Arrêter le script en cas d'erreur
-set -e
-
-echo "🌱 Génération du script de seed (Bucket: 'caisse')..."
-
-# 1. Vérification
-if [ ! -f "src/serviceaccounts.json" ]; then
-    echo "❌ Erreur : 'src/serviceaccounts.json' est introuvable."
-    exit 1
-fi
-
-# 2. Installation des outils (Mode Force pour éviter les conflits Angular)
-echo "📦 Installation des librairies de script..."
-npm install firebase-admin @supabase/supabase-js axios --no-save --legacy-peer-deps
-
-# 3. Création du dossier scripts
-mkdir -p scripts
-
-# 4. Génération du code Node.js
-echo "📝 Création de scripts/seed.js..."
-cat > scripts/seed.js <<EOF
 const admin = require('firebase-admin');
 const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
@@ -38,7 +15,7 @@ const db = admin.firestore();
 
 // 2. Supabase Admin
 // ⚠️ REMPLACEZ JUSTE L'URL CI-DESSOUS
-const SUPABASE_URL = 'https://REMPLACER_PAR_VOTRE_ID_PROJET.supabase.co'; 
+const SUPABASE_URL = 'https://hlebmestgogwyfukmups.supabase.co'; 
 
 // Votre clé secrète (Service Role) fournie précédemment
 const SUPABASE_SERVICE_KEY = 'sb_secret_gXJjm5eYT_3QnBRl_eh25Q_4ungNoXt';
@@ -70,7 +47,7 @@ async function uploadToSupabase(buffer, filename) {
   // Upload dans le bucket "caisse"
   const { data, error } = await supabase.storage
     .from(BUCKET_NAME)
-    .upload(\`mock/\${filename}\`, buffer, { 
+    .upload(`mock/${filename}`, buffer, { 
       contentType: 'image/jpeg', 
       upsert: true 
     });
@@ -83,14 +60,14 @@ async function uploadToSupabase(buffer, filename) {
   // Récupération URL publique
   const { data: urlData } = supabase.storage
     .from(BUCKET_NAME)
-    .getPublicUrl(\`mock/\${filename}\`);
+    .getPublicUrl(`mock/${filename}`);
     
   return urlData.publicUrl;
 }
 
 async function seed() {
   console.log('🚀 Démarrage de l\'injection de données...');
-  console.log(\`🎯 Cible: Bucket "\${BUCKET_NAME}"\`);
+  console.log(`🎯 Cible: Bucket "${BUCKET_NAME}"`);
 
   if (SUPABASE_URL.includes('REMPLACER')) {
     console.error('❌ ERREUR: Vous devez éditer scripts/seed.js et mettre votre URL Supabase !');
@@ -100,11 +77,11 @@ async function seed() {
   let count = 0;
   for (const p of MOCK_PRODUCTS) {
     try {
-      process.stdout.write(\`📦 Traitement de "\${p.name}"... \`);
+      process.stdout.write(`📦 Traitement de "${p.name}"... `);
       
       // 1. Download
       const buffer = await downloadImage(p.sourceUrl);
-      const filename = \`\${Date.now()}-\${Math.floor(Math.random()*1000)}.jpg\`;
+      const filename = `${Date.now()}-${Math.floor(Math.random()*1000)}.jpg`;
       
       // 2. Upload
       const publicUrl = await uploadToSupabase(buffer, filename);
@@ -124,17 +101,10 @@ async function seed() {
       count++;
     } catch (e) {
       console.log('');
-      console.error(\`❌ Échec: \${e.message}\`);
+      console.error(`❌ Échec: ${e.message}`);
     }
   }
-  console.log(\`\n✨ Terminé ! \${count} produits ajoutés.\`);
+  console.log(`\n✨ Terminé ! ${count} produits ajoutés.`);
 }
 
 seed();
-EOF
-
-echo "✅ Script 'scripts/seed.js' créé pour le bucket 'caisse'."
-echo "--------------------------------------------------------"
-echo "👉 ÉTAPE 1 : Ouvrez 'scripts/seed.js'"
-echo "👉 ÉTAPE 2 : Remplacez 'https://REMPLACER_PAR_VOTRE_ID_PROJET.supabase.co' par votre vraie URL."
-echo "👉 ÉTAPE 3 : Exécutez : node scripts/seed.js"

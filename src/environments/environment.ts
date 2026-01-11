@@ -2,7 +2,7 @@ export const environment = {
   production: false,
   // Config Supabase (Images)
   supabase: {
-    url: 'https://REMPLACER_PAR_VOTRE_ID_PROJET.supabase.co', // <--- IMPORTANT: Mettez votre URL Supabase ici
+    url: 'https://hlebmestgogwyfukmups.supabase.co', // <--- IMPORTANT: Mettez votre URL Supabase ici
     key: 'sb_publishable_5dQmytCObD201F7106pwcA_2EmxKY5a'
   },
   // Config Firebase (Base de données Produits/Ventes)
