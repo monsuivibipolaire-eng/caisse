@@ -1,51 +1,74 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
-import { Storage, ref, uploadBytes, getDownloadURL } from '@angular/fire/storage';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { environment } from 'src/environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ImageService {
   
-  private storage: Storage = inject(Storage);
+  private supabase: SupabaseClient;
 
-  constructor() { }
+  constructor() {
+    // Initialisation du client
+    // Note: Si l'URL est vide, cela plantera. Assurez-vous d'avoir édité environment.ts
+    this.supabase = createClient(environment.supabase.url, environment.supabase.key);
+  }
 
-  /**
-   * Ouvre la caméra ou la galerie, compresse l'image et la retourne en Base64
-   */
   async selectImage(): Promise<string | undefined> {
     try {
       const image = await Camera.getPhoto({
-        quality: 70, // Compression pour économiser la data
+        quality: 70,
         allowEditing: false,
         resultType: CameraResultType.Base64,
-        source: CameraSource.Prompt, // Demande : Caméra ou Galerie
-        width: 600 // Redimensionnement automatique
+        source: CameraSource.Prompt,
+        width: 800
       });
-
       return image.base64String;
     } catch (e) {
-      console.log('Sélection annulée par l utilisateur');
+      console.log('Sélection annulée');
       return undefined;
     }
   }
 
-  /**
-   * Envoie l'image Base64 vers Firebase Storage et retourne l'URL publique
-   */
   async uploadImage(base64: string): Promise<string> {
-    const fileName = `products/${new Date().getTime()}.jpeg`;
-    const storageRef = ref(this.storage, fileName);
-
-    // Conversion Base64 -> Blob
-    const response = await fetch(`data:image/jpeg;base64,${base64}`);
-    const blob = await response.blob();
-
-    // Upload
-    await uploadBytes(storageRef, blob);
+    const fileName = `products/${new Date().getTime()}.jpg`;
     
-    // Récupération de l'URL
-    return await getDownloadURL(storageRef);
+    // Conversion Base64 -> ArrayBuffer
+    const arrayBuffer = decode(base64);
+
+    // Upload vers le bucket 'images'
+    const { data, error } = await this.supabase
+      .storage
+      .from('images') // Assurez-vous que ce bucket existe sur Supabase !
+      .upload(fileName, arrayBuffer, {
+        contentType: 'image/jpeg',
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Erreur Upload Supabase:', error);
+      throw error;
+    }
+
+    // Récupération de l'URL publique
+    const { data: urlData } = this.supabase
+      .storage
+      .from('images')
+      .getPublicUrl(fileName);
+
+    return urlData.publicUrl;
   }
+}
+
+// Utilitaire de décodage
+function decode(base64: string) {
+  const binaryString = atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
 }
