@@ -1,32 +1,18 @@
 import { enableProdMode } from '@angular/core';
-import { bootstrapApplication } from '@angular/platform-browser';
-import { RouteReuseStrategy, provideRouter, withPreloading, PreloadAllModules } from '@angular/router';
-import { IonicRouteStrategy, provideIonicAngular } from '@ionic/angular/standalone';
+import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 
-import { routes } from './app/app.routes';
-import { AppComponent } from './app/app.component';
+import { AppModule } from './app/app.module';
 import { environment } from './environments/environment';
 
-// Firebase Imports
-import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
-import { provideAuth, getAuth } from '@angular/fire/auth';
-import { provideFirestore, getFirestore } from '@angular/fire/firestore';
-import { provideStorage, getStorage } from '@angular/fire/storage';
+// IMPORT REQUIS POUR LA CAMERA WEB
+import { defineCustomElements } from '@ionic/pwa-elements/loader';
 
 if (environment.production) {
   enableProdMode();
 }
 
-bootstrapApplication(AppComponent, {
-  providers: [
-    { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
-    provideIonicAngular(),
-    provideRouter(routes, withPreloading(PreloadAllModules)),
-    
-    // Initialisation Firebase
-    provideFirebaseApp(() => initializeApp(environment.firebase)),
-    provideAuth(() => getAuth()),
-    provideFirestore(() => getFirestore()),
-    provideStorage(() => getStorage()),
-  ],
-});
+platformBrowserDynamic().bootstrapModule(AppModule)
+  .catch(err => console.log(err));
+
+// INITIALISATION DE LA CAMERA WEB
+defineCustomElements(window);

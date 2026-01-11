@@ -3,11 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { 
   IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton, 
-  IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, ModalController, IonIcon
+  IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, ModalController, IonIcon, 
+  IonSpinner, LoadingController 
 } from '@ionic/angular/standalone';
 import { Product } from 'src/app/models/product.model';
 import { addIcons } from 'ionicons';
-import { closeOutline, saveOutline, barcodeOutline, gridOutline } from 'ionicons/icons';
+// IMPORTS COMPLETS
+import { closeOutline, saveOutline, barcodeOutline, gridOutline, cameraOutline, imageOutline, add } from 'ionicons/icons';
+import { ImageService } from 'src/app/services/image.service';
 
 @Component({
   selector: 'app-product-modal',
@@ -16,7 +19,7 @@ import { closeOutline, saveOutline, barcodeOutline, gridOutline } from 'ionicons
   imports: [
     CommonModule, FormsModule,
     IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton,
-    IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, IonIcon
+    IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, IonIcon, IonSpinner
   ]
 })
 export class ProductModalComponent {
@@ -30,12 +33,40 @@ export class ProductModalComponent {
     barcode: ''
   };
 
-  constructor(private modalCtrl: ModalController) {
-    addIcons({ closeOutline, saveOutline, barcodeOutline, gridOutline });
+  isUploading = false;
+
+  constructor(
+    private modalCtrl: ModalController,
+    private imageService: ImageService,
+    private loadingCtrl: LoadingController
+  ) {
+    // ENREGISTREMENT DES ICONES
+    addIcons({ closeOutline, saveOutline, barcodeOutline, gridOutline, cameraOutline, imageOutline, add });
   }
 
   cancel() {
     this.modalCtrl.dismiss(null, 'cancel');
+  }
+
+  async selectPhoto() {
+    console.log('Début sélection photo...');
+    try {
+      const base64 = await this.imageService.selectImage();
+      
+      if (base64) {
+        this.isUploading = true;
+        console.log('Image reçue, début upload...');
+        const url = await this.imageService.uploadImage(base64);
+        this.product.imageUrl = url;
+        console.log('Succès upload:', url);
+      } else {
+        console.log('Aucune image sélectionnée');
+      }
+    } catch (e) {
+      console.error('Erreur dans le processus photo:', e);
+    } finally {
+      this.isUploading = false;
+    }
   }
 
   confirm() {
