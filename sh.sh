@@ -3,127 +3,204 @@
 # Arrêter le script en cas d'erreur
 set -e
 
-echo "🧱 Reconstruction du Layout en CSS GRID (Solution Définitive)..."
+echo "🖨️ Mise en place du Ticket de Caisse Imprimable..."
 
-# Réécriture complète de caisse.page.html
-cat > src/app/pages/caisse/caisse.page.html <<EOF
-<ion-content [fullscreen]="true" [scrollY]="false" class="bg-slate-50">
+# 1. LOGIQUE DU COMPOSANT (TS)
+# Récupère la vente et la config magasin
+echo "🧠 Création de src/app/components/receipt-modal/receipt-modal.component.ts..."
+cat > src/app/components/receipt-modal/receipt-modal.component.ts <<EOF
+import { Component, Input, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { IonContent, IonButton, IonIcon, ModalController } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { printOutline, closeOutline, checkmarkCircle } from 'ionicons/icons';
+import { Sale } from 'src/app/models/sale.model';
+import { ConfigService } from 'src/app/services/config.service';
+import { StoreConfig } from 'src/app/models/config.model';
+
+@Component({
+  selector: 'app-receipt-modal',
+  templateUrl: './receipt-modal.component.html',
+  styleUrls: ['./receipt-modal.component.scss'],
+  standalone: true,
+  imports: [CommonModule, IonContent, IonButton, IonIcon]
+})
+export class ReceiptModalComponent implements OnInit {
+
+  @Input() sale!: Sale;
+  config: StoreConfig | null = null;
+
+  constructor(
+    private modalCtrl: ModalController,
+    private configService: ConfigService
+  ) {
+    addIcons({ printOutline, closeOutline, checkmarkCircle });
+  }
+
+  ngOnInit() {
+    // Charger les infos du magasin (Nom, Adresse, etc.)
+    this.configService.getConfig().subscribe(c => this.config = c);
+  }
+
+  close() {
+    this.modalCtrl.dismiss();
+  }
+
+  printReceipt() {
+    // Lance l'impression native du navigateur
+    window.print();
+  }
+}
+EOF
+
+# 2. DESIGN DU TICKET (HTML)
+# Structure HTML imitant un ticket thermique (80mm width style)
+echo "🎨 Création de src/app/components/receipt-modal/receipt-modal.component.html..."
+cat > src/app/components/receipt-modal/receipt-modal.component.html <<EOF
+<ion-content class="bg-slate-800">
   
-  <div class="fixed inset-0 w-full h-screen grid grid-cols-1 md:grid-cols-[1fr_420px] bg-slate-50">
+  <div class="flex flex-col items-center justify-center min-h-full p-4">
     
-    <div class="flex flex-col h-full overflow-hidden border-r border-slate-200 relative">
-      
-      <div class="px-4 py-3 bg-white border-b border-slate-100 flex justify-between items-center shrink-0 h-16 z-20 shadow-sm">
-        <div class="flex items-center gap-3">
-          <button routerLink="/dashboard" class="h-10 w-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-600 tap-effect hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200">
-            <ion-icon name="arrow-back-outline" class="text-xl"></ion-icon>
-          </button>
-          
-          <div class="relative flex items-center bg-white rounded-full pl-1 pr-3 h-11 border border-slate-200 shadow-sm tap-effect group cursor-pointer transition-all hover:border-indigo-300 hover:shadow-md max-w-[220px]">
-             <div class="relative h-8 w-8 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center shrink-0 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-               <ion-icon name="person" class="text-sm"></ion-icon>
-               <div class="absolute bottom-0 right-0 h-2.5 w-2.5 bg-emerald-400 border-2 border-white rounded-full"></div>
-             </div>
-             <ion-select [(ngModel)]="currentStaffId" [interfaceOptions]="customPopoverOptions" interface="popover" (ionChange)="updateCurrentStaffName()" class="custom-select pl-2 text-sm max-w-[140px]" placeholder="Choisir">
-               <ion-select-option value="COMPTOIR">Comptoir</ion-select-option>
-               <ng-container *ngFor="let s of staffList$ | async">
-                 <ion-select-option [value]="s.id">{{ s.name }}</ion-select-option>
-               </ng-container>
-             </ion-select>
-             <ion-icon name="chevron-down-outline" class="text-slate-300 text-xs ml-auto group-hover:text-indigo-500 group-hover:rotate-180 transition-transform duration-300"></ion-icon>
-          </div>
-        </div>
-        
-        <button (click)="openScanner()" class="bg-slate-800 text-white px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-bold shadow-lg shadow-slate-300 tap-effect active:scale-95 transition-transform hover:bg-slate-700">
-          <ion-icon name="scan-outline" class="text-lg"></ion-icon>
-          <span class="hidden sm:inline">Scanner</span>
-        </button>
-      </div>
-
-      <div class="flex-1 overflow-y-auto p-4 pb-[60vh] md:pb-4 bg-slate-50">
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          <ng-container *ngFor="let product of products$ | async">
-            <div (click)="addToCart(product)"
-                 class="bg-white rounded-2xl p-2 shadow-sm border border-slate-100 group tap-effect cursor-pointer flex flex-col h-48 active:scale-95 transition-transform hover:shadow-md">
-              <div class="h-28 w-full bg-slate-50 rounded-xl overflow-hidden relative mb-2">
-                 <img [src]="product.imageUrl" class="h-full w-full object-cover" loading="lazy" />
-                 <div class="absolute bottom-1 right-1 bg-white/90 backdrop-blur px-2 py-0.5 rounded-md text-[10px] font-bold text-slate-900 shadow-sm">
-                   {{ product.price | currency:'EUR':'symbol':'1.2-2' }}
-                 </div>
-              </div>
-              <div class="flex-1 flex flex-col px-1">
-                 <h3 class="font-bold text-slate-700 text-xs leading-tight line-clamp-2 group-hover:text-indigo-600 transition-colors">{{ product.name }}</h3>
-                 <p class="text-[9px] text-slate-400 font-bold uppercase mt-auto">{{ product.category }}</p>
-              </div>
-            </div>
-          </ng-container>
-        </div>
-      </div>
+    <div class="screen-only flex flex-col items-center text-white mb-6 animate-fade-in">
+      <ion-icon name="checkmark-circle" class="text-6xl text-emerald-400 mb-2"></ion-icon>
+      <h2 class="text-2xl font-bold">Vente Validée !</h2>
+      <p class="text-slate-400">Total: {{ sale.total | currency:'EUR' }}</p>
     </div>
 
+    <div id="receipt-area" class="bg-white text-slate-900 w-full max-w-[380px] p-6 shadow-2xl relative ticket-paper">
+      
+      <div class="absolute top-0 left-0 right-0 h-1 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMiAxMiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZmZmIiBzdHJva2U9Im5vbmUiPjxjaXJjbGUgY3g9IjYiIGN5PSIwIiByPSI2Ii8+PC9zdmc+')] bg-repeat-x bg-top transform -translate-y-1/2"></div>
 
-    <div class="bg-white z-[500] 
-                fixed bottom-0 w-full h-[60vh] rounded-t-[2rem] shadow-[0_-10px_40px_rgba(0,0,0,0.1)]
-                md:relative md:w-auto md:h-full md:rounded-none md:shadow-none md:border-l md:border-slate-200
-                grid grid-rows-[auto_1fr_auto]"> <div class="px-6 py-3 flex justify-between items-center border-b border-dashed border-slate-200 bg-white h-16 rounded-t-[2rem] md:rounded-none z-10">
-        <div class="flex items-center gap-2">
-          <div class="bg-indigo-50 p-2 rounded-lg text-indigo-600">
-            <ion-icon name="cart-outline" class="text-xl"></ion-icon>
+      <div class="text-center mb-6">
+        <h1 class="text-xl font-extrabold uppercase tracking-widest">{{ config?.name || 'MON MAGASIN' }}</h1>
+        <p class="text-xs font-mono text-slate-500 mt-1 whitespace-pre-line">{{ config?.address || 'Adresse non configurée' }}</p>
+        <p class="text-xs font-mono text-slate-500">{{ config?.phone }}</p>
+        <p class="text-xs font-mono text-slate-500 mt-1">{{ sale.date?.seconds * 1000 | date:'dd/MM/yyyy HH:mm' }}</p>
+      </div>
+
+      <div class="border-b-2 border-dashed border-slate-300 my-4"></div>
+
+      <div class="flex justify-between text-xs font-bold font-mono mb-4 text-slate-600">
+        <span>Vendeur: {{ sale.staffName || 'Inconnu' }}</span>
+        <span>ID: #{{ sale.id | slice:0:6 }}</span>
+      </div>
+
+      <div class="flex flex-col gap-2 font-mono text-sm mb-6">
+        <div *ngFor="let item of sale.items" class="flex justify-between items-start">
+          <div class="flex flex-col">
+            <span class="font-bold uppercase">{{ item.product.name }}</span>
+            <span class="text-xs text-slate-500">x{{ item.quantity }} @ {{ item.product.price | number:'1.2-2' }}</span>
           </div>
-          <span class="font-bold text-slate-800">Panier</span>
+          <span class="font-bold">{{ (item.product.price * item.quantity) | number:'1.2-2' }}€</span>
         </div>
-        <div class="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold">
-          <ng-container *ngIf="cart$ | async as cart">{{ cart.itemCount }} items</ng-container>
+      </div>
+
+      <div class="border-b-2 border-dashed border-slate-300 my-4"></div>
+
+      <div class="space-y-1 font-mono text-right">
+        <div class="flex justify-between text-xs text-slate-500">
+          <span>Total HT</span>
+          <span>{{ sale.total * 0.8 | number:'1.2-2' }}€</span>
+        </div>
+        <div class="flex justify-between text-xs text-slate-500">
+          <span>TVA (20%)</span>
+          <span>{{ sale.total * 0.2 | number:'1.2-2' }}€</span>
+        </div>
+        <div class="flex justify-between text-xl font-extrabold mt-3 border-t-2 border-slate-900 pt-2">
+          <span>TOTAL TTC</span>
+          <span>{{ sale.total | currency:'EUR':'symbol':'1.2-2' }}</span>
+        </div>
+        <div class="text-xs font-bold uppercase mt-2 text-slate-600 text-center">
+          PAIEMENT : {{ sale.paymentMethod }}
         </div>
       </div>
 
-      <div class="overflow-y-auto p-4 space-y-3 bg-slate-50/50 relative">
-        <ng-container *ngIf="cart$ | async as cart">
-          
-          <div *ngIf="cart.items.length === 0" class="absolute inset-0 flex flex-col items-center justify-center text-slate-300 gap-3">
-            <ion-icon name="basket-outline" class="text-5xl opacity-40"></ion-icon>
-            <p class="text-sm font-medium">Panier vide</p>
-          </div>
+      <div class="border-b-2 border-dashed border-slate-300 my-6"></div>
 
-          <div *ngFor="let item of cart.items" class="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
-            <div class="flex-1 min-w-0 mr-3">
-              <h4 class="font-bold text-slate-700 text-sm truncate">{{ item.product.name }}</h4>
-              <div class="text-xs text-indigo-600 font-bold mt-0.5">
-                {{ item.product.price | currency:'EUR' }} 
-                <span class="text-slate-400 font-normal">x {{ item.quantity }}</span>
-              </div>
-            </div>
-            <div class="flex items-center bg-slate-50 rounded-lg h-8 border border-slate-200">
-              <button (click)="decreaseItem(item.product.id!)" class="w-8 h-full flex items-center justify-center text-slate-500 hover:bg-white rounded-l-lg tap-effect"><ion-icon name="remove-outline"></ion-icon></button>
-              <span class="w-6 text-center text-xs font-bold text-slate-800">{{ item.quantity }}</span>
-              <button (click)="addToCart(item.product)" class="w-8 h-full flex items-center justify-center text-slate-500 hover:bg-white rounded-r-lg tap-effect"><ion-icon name="add-outline"></ion-icon></button>
-            </div>
-          </div>
-        </ng-container>
+      <div class="text-center">
+        <p class="text-xs font-mono font-bold">{{ config?.footerMessage || 'MERCI DE VOTRE VISITE !' }}</p>
+        <p class="text-[10px] text-slate-400 mt-1">À bientôt</p>
+        
+        <div class="mt-4 h-12 bg-slate-900 mx-auto w-3/4 opacity-80" style="mask-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAiIHByZXNlcnZlQXNwZWN0UmF0aW89Im5vbmUiPjxwYXRoIGQ9Ik0wIDBoMnYxMEgwem00IDBoMXYxMEg0em0zIDBoMXYxMEg3em0zIDBoMnYxMEgxMHptNCAwaDF2MTBIMTR6bTMgMGgzdjEwSDE3em01IDBoMXYxMEgyMnptMyAwaDF2MTBIMjV6bTMgMGgydjEwSDI4em00IDBoMXYxMEgzMnptMyAwaDJ2MTBIMzV6bTQgMGgxdjEwSDM5em0zIDBoMXYxMEg0MnptNCAwaDF2MTBINDI2em0zIDBoMXYxMEg0OXptNCAwaDJ2MTBINTN6bTQgMGgxdjEwSDU3em0zIDBoMXYxMEg2MHptNCAwaDJ2MTBINjR6bTQgMGgxdjEwSDY4em0zIDBoMXYxMEg3MXptNCAwaDF2MTBINzR6bTMgMGgydjEwSDc3em00IDBoMXYxMEg4MXptMyAwaDJ2MTBIODR6bTQgMGgxdjEwSDg5em0zIDBoMXYxMEg5MnptNCAwaDF2MTB5OTZ6IiBmaWxsPSIjMDAwIi8+PC9zdmc+'); mask-size: contain;"></div>
       </div>
+      
+      <div class="absolute bottom-0 left-0 right-0 h-1 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMiAxMiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjZmZmIiBzdHJva2U9Im5vbmUiPjxjaXJjbGUgY3g9IjYiIGN5PSIxMiIgcj0iNiIvPjwvc3ZnPg==')] bg-repeat-x bg-bottom transform translate-y-1/2"></div>
+    </div>
 
-      <div class="bg-white border-t border-slate-100 p-5 pb-safe z-20 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
-        <ng-container *ngIf="cart$ | async as cart">
-          <div class="flex justify-between items-end mb-3">
-            <div class="flex flex-col">
-              <span class="text-xs text-slate-400 font-bold uppercase">Total TTC</span>
-            </div>
-            <span class="text-3xl font-extrabold text-slate-900 tracking-tight">{{ cart.total | currency:'EUR':'symbol':'1.2-2' }}</span>
-          </div>
-          
-          <button (click)="validateSale()" 
-                  [disabled]="cart.items.length === 0 || isProcessing"
-                  class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold shadow-xl shadow-indigo-200 flex items-center justify-center gap-3 tap-effect disabled:opacity-50 disabled:shadow-none transition-all hover:bg-indigo-700 active:scale-95">
-            <span *ngIf="!isProcessing" class="flex items-center gap-2">VALIDER <ion-icon name="checkmark-circle-outline" class="text-xl"></ion-icon></span>
-            <span *ngIf="isProcessing">Traitement...</span>
-          </button>
-        </ng-container>
-      </div>
-
+    <div class="screen-only flex flex-col w-full max-w-[380px] gap-3 mt-8">
+      <button (click)="printReceipt()" class="w-full bg-white text-slate-900 py-4 rounded-xl font-bold text-lg shadow-lg tap-effect flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors">
+        <ion-icon name="print-outline" class="text-2xl"></ion-icon>
+        IMPRIMER
+      </button>
+      
+      <button (click)="close()" class="w-full bg-slate-700 text-slate-300 py-3 rounded-xl font-bold tap-effect hover:bg-slate-600 transition-colors">
+        Fermer
+      </button>
     </div>
 
   </div>
 </ion-content>
 EOF
 
-echo "✅ PANIER FIXÉ (MODE GRID) : Le bouton Valider est mathématiquement forcé d'être visible."
+# 3. STYLES D'IMPRESSION (SCSS)
+# C'est ici que la magie opère pour cacher le reste de l'app
+echo "🎨 Création de src/app/components/receipt-modal/receipt-modal.component.scss..."
+cat > src/app/components/receipt-modal/receipt-modal.component.scss <<EOF
+/* Style papier ticket */
+.ticket-paper {
+  filter: drop-shadow(0 20px 13px rgb(0 0 0 / 0.03)) drop-shadow(0 8px 5px rgb(0 0 0 / 0.08));
+}
+
+/* --- RÈGLES D'IMPRESSION (CRUCIAL) --- */
+@media print {
+  /* 1. Cacher tout le corps de l'application Ionic */
+  body > * {
+    display: none !important;
+  }
+
+  /* 2. Cacher les éléments "Screen Only" (Boutons, message succès) */
+  .screen-only {
+    display: none !important;
+  }
+
+  /* 3. Afficher uniquement la modale et son contenu */
+  /* Ionic attache les modales à la racine, on doit cibler spécifiquement */
+  /* Note: En impression Web pure, on triche souvent en positionnant le contenu en absolute */
+  
+  :host {
+    display: block !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 9999 !important;
+    background: white !important;
+  }
+
+  /* Forcer le contenu du ticket à être visible */
+  #receipt-area {
+    display: block !important;
+    width: 100% !important; /* Pleine largeur papier */
+    max-width: none !important;
+    box-shadow: none !important; /* Pas d'ombre à l'impression */
+    margin: 0 !important;
+    padding: 0 !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+  }
+
+  /* Supprimer les fonds sombres */
+  ion-content {
+    --background: white !important;
+  }
+  
+  .bg-slate-800 {
+    background-color: white !important;
+  }
+}
+EOF
+
+echo "✅ Ticket de caisse installé avec succès."
+echo "👉 Cliquez sur 'Valider' dans le panier. Une fenêtre s'ouvrira avec le ticket et le bouton 'Imprimer'."

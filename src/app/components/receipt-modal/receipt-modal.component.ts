@@ -1,40 +1,42 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton, ModalController, IonIcon } from '@ionic/angular/standalone';
-import { NgxPrintModule } from 'ngx-print';
+import { IonContent, IonButton, IonIcon, ModalController } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { printOutline, closeOutline } from 'ionicons/icons';
+import { printOutline, closeOutline, checkmarkCircle } from 'ionicons/icons';
 import { Sale } from 'src/app/models/sale.model';
 import { ConfigService } from 'src/app/services/config.service';
 import { StoreConfig } from 'src/app/models/config.model';
-import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-receipt-modal',
   templateUrl: './receipt-modal.component.html',
   styleUrls: ['./receipt-modal.component.scss'],
   standalone: true,
-  imports: [
-    CommonModule, NgxPrintModule,
-    IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton, IonIcon
-  ]
+  imports: [CommonModule, IonContent, IonButton, IonIcon]
 })
 export class ReceiptModalComponent implements OnInit {
 
-  @Input() sale: Sale | null = null;
-  config$: Observable<StoreConfig>;
+  @Input() sale!: Sale;
+  config: StoreConfig | null = null;
 
   constructor(
     private modalCtrl: ModalController,
     private configService: ConfigService
   ) {
-    addIcons({ printOutline, closeOutline });
-    this.config$ = this.configService.getConfig();
+    addIcons({ printOutline, closeOutline, checkmarkCircle });
   }
 
-  ngOnInit() {}
+  ngOnInit() {
+    // Charger les infos du magasin (Nom, Adresse, etc.)
+    this.configService.getConfig().subscribe(c => this.config = c);
+  }
 
   close() {
     this.modalCtrl.dismiss();
+  }
+
+  printReceipt() {
+    // Lance l'impression native du navigateur
+    window.print();
   }
 }
