@@ -7,7 +7,8 @@
           <p class="text-slate-400 font-medium text-sm uppercase tracking-wider mb-1">Tableau de bord</p>
           <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight">Vue d'ensemble</h1>
         </div>
-        <button routerLink="/settings" class="h-12 w-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-600 shadow-sm border border-slate-100 tap-effect">
+        
+        <button routerLink="/settings" class="h-12 w-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-600 shadow-sm border border-slate-100 tap-effect hover:bg-slate-100 transition-colors">
           <ion-icon name="settings-outline" class="text-xl"></ion-icon>
         </button>
       </div>
@@ -59,18 +60,32 @@
     </div>
 
     <div class="px-6 mt-6 grid grid-cols-2 gap-5">
-      <button routerLink="/caisse" class="bg-white h-32 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center gap-3 tap-effect hover:border-indigo-200 transition-colors">
+      <button routerLink="/caisse" class="bg-white h-32 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center gap-3 tap-effect hover:border-indigo-200 transition-colors active:scale-95">
         <div class="h-12 w-12 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 text-xl">
           <ion-icon name="calculator-outline"></ion-icon>
         </div>
         <span class="font-bold text-slate-700 text-sm">Caisse</span>
       </button>
 
-      <button routerLink="/stocks" class="bg-white h-32 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center gap-3 tap-effect hover:border-emerald-200 transition-colors">
+      <button routerLink="/stocks" class="bg-white h-32 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center gap-3 tap-effect hover:border-emerald-200 transition-colors active:scale-95">
         <div class="h-12 w-12 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 text-xl">
           <ion-icon name="cube-outline"></ion-icon>
         </div>
         <span class="font-bold text-slate-700 text-sm">Stocks</span>
+      </button>
+      
+      <button routerLink="/staff" class="bg-white h-32 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center gap-3 tap-effect hover:border-amber-200 transition-colors active:scale-95">
+        <div class="h-12 w-12 bg-amber-50 rounded-full flex items-center justify-center text-amber-600 text-xl">
+          <ion-icon name="people-outline"></ion-icon>
+        </div>
+        <span class="font-bold text-slate-700 text-sm">Équipe</span>
+      </button>
+
+      <button routerLink="/history" class="bg-white h-32 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center gap-3 tap-effect hover:border-blue-200 transition-colors active:scale-95">
+        <div class="h-12 w-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 text-xl">
+          <ion-icon name="time-outline"></ion-icon>
+        </div>
+        <span class="font-bold text-slate-700 text-sm">Historique</span>
       </button>
     </div>
 

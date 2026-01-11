@@ -7,7 +7,10 @@ import {
   IonSelect, IonSelectOption 
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { arrowBackOutline, scanOutline, cartOutline, basketOutline, removeOutline, addOutline, checkmarkCircleOutline, personOutline } from 'ionicons/icons';
+import { 
+  arrowBackOutline, scanOutline, cartOutline, basketOutline, removeOutline, 
+  addOutline, checkmarkCircleOutline, person, chevronDownOutline 
+} from 'ionicons/icons';
 import { ProductService } from 'src/app/services/product.service';
 import { CartService } from 'src/app/services/cart.service';
 import { StaffService } from 'src/app/services/staff.service';
@@ -32,10 +35,20 @@ export class CaissePage implements OnInit {
   
   isProcessing = false;
   
-  // Gestion du personnel
   currentStaffId = 'COMPTOIR';
   currentStaffName = 'Comptoir';
   private allStaff: Staff[] = [];
+
+  // OPTIONS DE POSITIONNEMENT STRICTES
+  customPopoverOptions: any = {
+    cssClass: 'modern-staff-popover',
+    side: 'bottom',      // En dessous
+    alignment: 'start',  // Aligné à gauche du bouton
+    showBackdrop: false, // Pas de fond gris
+    dismissOnSelect: true,
+    // Cette option est cruciale pour que le popover ne prenne pas tout l'écran
+    size: 'auto' 
+  };
 
   constructor(
     private productService: ProductService,
@@ -44,14 +57,13 @@ export class CaissePage implements OnInit {
     private modalCtrl: ModalController,
     private toastCtrl: ToastController
   ) {
-    addIcons({ arrowBackOutline, scanOutline, cartOutline, basketOutline, removeOutline, addOutline, checkmarkCircleOutline, personOutline });
+    addIcons({ arrowBackOutline, scanOutline, cartOutline, basketOutline, removeOutline, addOutline, checkmarkCircleOutline, person, chevronDownOutline });
     this.products$ = this.productService.getProducts();
     this.cart$ = this.cartService.cart$;
     this.staffList$ = this.staffService.getStaff();
   }
 
   ngOnInit() {
-    // S'abonner pour avoir la liste en local pour retrouver le nom facilement
     this.staffList$.subscribe(list => this.allStaff = list);
   }
 
@@ -91,9 +103,7 @@ export class CaissePage implements OnInit {
   async validateSale() {
     this.isProcessing = true;
     try {
-      // Passer le staff sélectionné à la méthode checkout
       const staffInfo = { id: this.currentStaffId, name: this.currentStaffName };
-      
       const sale = await this.cartService.checkout('ESPECES', staffInfo);
       
       const modal = await this.modalCtrl.create({
