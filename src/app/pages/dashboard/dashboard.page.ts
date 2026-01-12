@@ -1,10 +1,15 @@
-import { Component, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { IonContent, IonIcon } from '@ionic/angular/standalone';
+import { IonContent, IonIcon, AlertController, IonMenuButton } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { settingsOutline, walletOutline, trendingUpOutline, calculatorOutline, cubeOutline, timeOutline, receiptOutline, peopleOutline } from 'ionicons/icons';
+import { 
+  settingsOutline, walletOutline, trendingUpOutline, calculatorOutline, 
+  cubeOutline, timeOutline, receiptOutline, peopleOutline, 
+  logOutOutline, shieldCheckmarkOutline, gridOutline 
+} from 'ionicons/icons';
 import { StatsService } from 'src/app/services/stats.service';
+import { AuthService } from 'src/app/services/auth.service';
 import { Observable, map } from 'rxjs';
 import { Chart, registerables } from 'chart.js';
 
@@ -15,7 +20,7 @@ Chart.register(...registerables);
   templateUrl: './dashboard.page.html',
   styleUrls: ['./dashboard.page.scss'],
   standalone: true,
-  imports: [CommonModule, RouterLink, IonContent, IonIcon]
+  imports: [CommonModule, RouterLink, IonContent, IonIcon, IonMenuButton]
 })
 export class DashboardPage implements OnInit, AfterViewInit {
 
@@ -23,9 +28,19 @@ export class DashboardPage implements OnInit, AfterViewInit {
   totalRevenue$: Observable<number>;
   totalCount$: Observable<number>;
   chart: any;
+  
+  currentUserEmail: string | null | undefined = '';
 
-  constructor(private statsService: StatsService) {
-    addIcons({ settingsOutline, walletOutline, trendingUpOutline, calculatorOutline, cubeOutline, timeOutline, receiptOutline, peopleOutline });
+  constructor(
+    private statsService: StatsService,
+    private authService: AuthService,
+    private alertCtrl: AlertController
+  ) {
+    addIcons({ 
+      settingsOutline, walletOutline, trendingUpOutline, calculatorOutline, 
+      cubeOutline, timeOutline, receiptOutline, peopleOutline,
+      logOutOutline, shieldCheckmarkOutline, gridOutline
+    });
 
     this.totalRevenue$ = this.todaySales$.pipe(
       map(sales => sales.reduce((acc, sale) => acc + sale.total, 0))
@@ -36,7 +51,9 @@ export class DashboardPage implements OnInit, AfterViewInit {
     );
   }
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.currentUserEmail = this.authService.getCurrentUserEmail();
+  }
 
   ngAfterViewInit() {
     this.loadChartData();
@@ -44,7 +61,7 @@ export class DashboardPage implements OnInit, AfterViewInit {
 
   loadChartData() {
     const labels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-    const data = [120, 190, 30, 50, 20, 300, 450]; // Mock data
+    const data = [120, 190, 30, 50, 20, 300, 450]; 
 
     this.createChart(labels, data);
   }
@@ -82,5 +99,17 @@ export class DashboardPage implements OnInit, AfterViewInit {
         }
       }
     });
+  }
+
+  async logout() {
+    const alert = await this.alertCtrl.create({
+      header: 'Déconnexion',
+      message: 'Quitter la caisse ?',
+      buttons: [
+        { text: 'Annuler', role: 'cancel' },
+        { text: 'Déconnexion', role: 'confirm', handler: () => this.authService.logout() }
+      ]
+    });
+    await alert.present();
   }
 }

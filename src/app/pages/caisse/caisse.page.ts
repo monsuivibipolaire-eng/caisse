@@ -4,12 +4,12 @@ import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { 
   IonContent, IonIcon, IonSpinner, ModalController, ToastController, 
-  IonSelect, IonSelectOption 
+  IonSelect, IonSelectOption, IonMenuButton 
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { 
   arrowBackOutline, scanOutline, cartOutline, basketOutline, removeOutline, 
-  addOutline, checkmarkCircleOutline, person, chevronDownOutline 
+  addOutline, checkmarkCircleOutline, person, chevronDownOutline, menuOutline 
 } from 'ionicons/icons';
 import { ProductService } from 'src/app/services/product.service';
 import { CartService } from 'src/app/services/cart.service';
@@ -25,7 +25,7 @@ import { ReceiptModalComponent } from 'src/app/components/receipt-modal/receipt-
   templateUrl: './caisse.page.html',
   styleUrls: ['./caisse.page.scss'],
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, IonContent, IonIcon, IonSpinner, IonSelect, IonSelectOption]
+  imports: [CommonModule, RouterLink, FormsModule, IonContent, IonIcon, IonSpinner, IonSelect, IonSelectOption, IonMenuButton]
 })
 export class CaissePage implements OnInit {
 
@@ -39,15 +39,12 @@ export class CaissePage implements OnInit {
   currentStaffName = 'Comptoir';
   private allStaff: Staff[] = [];
 
-  // OPTIONS DE POSITIONNEMENT STRICTES
   customPopoverOptions: any = {
     cssClass: 'modern-staff-popover',
-    side: 'bottom',      // En dessous
-    alignment: 'start',  // Aligné à gauche du bouton
-    showBackdrop: false, // Pas de fond gris
-    dismissOnSelect: true,
-    // Cette option est cruciale pour que le popover ne prenne pas tout l'écran
-    size: 'auto' 
+    side: 'bottom',
+    alignment: 'start',
+    showBackdrop: false,
+    event: null
   };
 
   constructor(
@@ -57,7 +54,7 @@ export class CaissePage implements OnInit {
     private modalCtrl: ModalController,
     private toastCtrl: ToastController
   ) {
-    addIcons({ arrowBackOutline, scanOutline, cartOutline, basketOutline, removeOutline, addOutline, checkmarkCircleOutline, person, chevronDownOutline });
+    addIcons({ arrowBackOutline, scanOutline, cartOutline, basketOutline, removeOutline, addOutline, checkmarkCircleOutline, person, chevronDownOutline, menuOutline });
     this.products$ = this.productService.getProducts();
     this.cart$ = this.cartService.cart$;
     this.staffList$ = this.staffService.getStaff();

@@ -3,12 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { 
   IonContent, IonIcon, IonItemSliding, IonItem, IonItemOptions, IonItemOption, 
-  ModalController, NavController, ToastController 
+  ModalController, NavController, ToastController, IonMenuButton 
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { 
   arrowBackOutline, addOutline, cubeOutline, trashOutline, imageOutline, 
-  barcodeOutline, searchOutline, alertCircleOutline, filterOutline, pencilOutline 
+  barcodeOutline, searchOutline, alertCircleOutline, filterOutline, pencilOutline, menuOutline 
 } from 'ionicons/icons';
 import { ProductService } from 'src/app/services/product.service';
 import { Observable, BehaviorSubject, combineLatest } from 'rxjs';
@@ -21,7 +21,7 @@ import { ProductModalComponent } from 'src/app/components/product-modal/product-
   templateUrl: './stocks.page.html',
   styleUrls: ['./stocks.page.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, IonContent, IonIcon, IonItemSliding, IonItem, IonItemOptions, IonItemOption]
+  imports: [CommonModule, FormsModule, IonContent, IonIcon, IonItemSliding, IonItem, IonItemOptions, IonItemOption, IonMenuButton]
 })
 export class StocksPage implements OnInit {
   
@@ -40,7 +40,7 @@ export class StocksPage implements OnInit {
     private navCtrl: NavController,
     private toastCtrl: ToastController
   ) {
-    addIcons({ arrowBackOutline, addOutline, cubeOutline, trashOutline, imageOutline, barcodeOutline, searchOutline, alertCircleOutline, filterOutline, pencilOutline });
+    addIcons({ arrowBackOutline, addOutline, cubeOutline, trashOutline, imageOutline, barcodeOutline, searchOutline, alertCircleOutline, filterOutline, pencilOutline, menuOutline });
     
     this.filteredProducts$ = combineLatest([
       this.productsSource$,
@@ -77,7 +77,6 @@ export class StocksPage implements OnInit {
     this.categoryFilter$.next(cat);
   }
 
-  // OUVERTURE MODALE : CRÉATION
   async openAddModal() {
     const modal = await this.modalCtrl.create({ component: ProductModalComponent });
     modal.present();
@@ -88,12 +87,11 @@ export class StocksPage implements OnInit {
     }
   }
 
-  // OUVERTURE MODALE : ÉDITION
   async editProduct(product: Product, slidingItem: any) {
-    slidingItem.close(); // Ferme le menu glissant
+    slidingItem.close();
     const modal = await this.modalCtrl.create({ 
       component: ProductModalComponent,
-      componentProps: { productToEdit: product } // On passe le produit
+      componentProps: { productToEdit: product }
     });
     modal.present();
     const { data, role } = await modal.onWillDismiss();

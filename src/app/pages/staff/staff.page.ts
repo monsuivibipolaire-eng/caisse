@@ -2,9 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { IonContent, IonIcon } from '@ionic/angular/standalone';
+import { IonContent, IonIcon, IonMenuButton } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { arrowBackOutline, pencilOutline, trashOutline } from 'ionicons/icons';
+import { arrowBackOutline, pencilOutline, trashOutline, menuOutline } from 'ionicons/icons';
 import { StaffService } from 'src/app/services/staff.service';
 import { Staff } from 'src/app/models/staff.model';
 import { Observable } from 'rxjs';
@@ -13,7 +13,7 @@ import { Observable } from 'rxjs';
   selector: 'app-staff',
   templateUrl: './staff.page.html',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, IonContent, IonIcon]
+  imports: [CommonModule, FormsModule, RouterLink, IonContent, IonIcon, IonMenuButton]
 })
 export class StaffPage implements OnInit {
   
@@ -23,7 +23,7 @@ export class StaffPage implements OnInit {
   isEditing = false;
 
   constructor(private staffService: StaffService) {
-    addIcons({ arrowBackOutline, pencilOutline, trashOutline });
+    addIcons({ arrowBackOutline, pencilOutline, trashOutline, menuOutline });
     this.staff$ = this.staffService.getStaff();
   }
 

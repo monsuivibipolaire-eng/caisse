@@ -4,51 +4,98 @@ import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { 
   IonContent, IonIcon, IonModal, IonDatetime, IonDatetimeButton, 
-  IonSegment, IonSegmentButton, IonLabel, ModalController 
+  IonSegment, IonSegmentButton, IonLabel, ModalController, IonMenuButton,
+  IonSelect, IonSelectOption 
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { arrowBackOutline, calendarOutline, receiptOutline, cardOutline, cashOutline } from 'ionicons/icons';
+import { 
+  arrowBackOutline, calendarOutline, receiptOutline, cardOutline, 
+  cashOutline, menuOutline, personOutline, filterOutline, chevronDownOutline 
+} from 'ionicons/icons';
 import { StatsService } from 'src/app/services/stats.service';
+import { StaffService } from 'src/app/services/staff.service';
 import { Sale } from 'src/app/models/sale.model';
+import { Staff } from 'src/app/models/staff.model';
 import { Observable, BehaviorSubject, combineLatest, map, switchMap } from 'rxjs';
 import { ReceiptModalComponent } from 'src/app/components/receipt-modal/receipt-modal.component';
 
 @Component({
   selector: 'app-history',
   templateUrl: './history.page.html',
+  styleUrls: ['./history.page.scss'],
   standalone: true,
   imports: [
     CommonModule, RouterLink, FormsModule,
     IonContent, IonIcon, IonModal, IonDatetime, IonDatetimeButton,
-    IonSegment, IonSegmentButton, IonLabel
+    IonSegment, IonSegmentButton, IonLabel, IonMenuButton,
+    IonSelect, IonSelectOption
   ]
 })
 export class HistoryPage implements OnInit {
 
-  // Flux de données
+  // Flux de filtres
   rangeSubject = new BehaviorSubject<{start: Date, end: Date}>(this.getRange('today'));
   paymentFilter$ = new BehaviorSubject<string>('ALL');
+  staffFilter$ = new BehaviorSubject<string>('ALL'); // NOUVEAU FILTRE
   
+  // Données
   sales$: Observable<Sale[]>;
   stats$: Observable<{ totalRevenue: number, count: number }>;
+  staffList$: Observable<Staff[]>;
   
   currentRange: 'today' | 'yesterday' | 'week' | 'custom' = 'today';
 
-  constructor(private statsService: StatsService, private modalCtrl: ModalController) {
-    addIcons({ arrowBackOutline, calendarOutline, receiptOutline, cardOutline, cashOutline });
+  // Options pour le selecteur de staff (Style iOS propre)
+  customPopoverOptions: any = {
+    cssClass: 'modern-staff-popover', 
+    side: 'bottom',
+    alignment: 'start',
+    showBackdrop: false
+  };
 
+  constructor(
+    private statsService: StatsService, 
+    private staffService: StaffService,
+    private modalCtrl: ModalController
+  ) {
+    addIcons({ 
+      arrowBackOutline, calendarOutline, receiptOutline, cardOutline, 
+      cashOutline, menuOutline, personOutline, filterOutline, chevronDownOutline 
+    });
+
+    this.staffList$ = this.staffService.getStaff();
+
+    // COMBINAISON DES 3 FILTRES
     this.sales$ = combineLatest([
       this.rangeSubject.pipe(
         switchMap(range => this.statsService.getSalesHistory(range.start, range.end))
       ),
-      this.paymentFilter$
+      this.paymentFilter$,
+      this.staffFilter$
     ]).pipe(
-      map(([sales, paymentType]) => {
-        if (paymentType === 'ALL') return sales;
-        return sales.filter(s => s.paymentMethod === paymentType);
+      map(([sales, paymentType, staffId]) => {
+        let filtered = sales;
+
+        // 1. Filtre Paiement
+        if (paymentType !== 'ALL') {
+          filtered = filtered.filter(s => s.paymentMethod === paymentType);
+        }
+
+        // 2. Filtre Staff
+        if (staffId !== 'ALL') {
+          // Si staffId est 'COMPTOIR', on cherche ceux qui n'ont pas de staffId ou qui ont 'COMPTOIR'
+          if (staffId === 'COMPTOIR') {
+            filtered = filtered.filter(s => !s.staffId || s.staffId === 'COMPTOIR');
+          } else {
+            filtered = filtered.filter(s => s.staffId === staffId);
+          }
+        }
+
+        return filtered;
       })
     );
 
+    // Calcul des KPIs sur la liste filtrée
     this.stats$ = this.sales$.pipe(
       map(sales => ({
         totalRevenue: sales.reduce((acc, s) => acc + s.total, 0),
@@ -78,6 +125,11 @@ export class HistoryPage implements OnInit {
 
   onPaymentChange(event: any) {
     this.paymentFilter$.next(event.detail.value);
+  }
+
+  // Appelé quand on change le vendeur
+  onStaffChange(event: any) {
+    this.staffFilter$.next(event.detail.value);
   }
 
   getRange(type: string): {start: Date, end: Date} {
