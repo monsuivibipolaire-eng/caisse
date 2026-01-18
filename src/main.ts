@@ -1,3 +1,4 @@
+import { Printer } from '@awesome-cordova-plugins/printer/ngx';
 import { enableProdMode, importProvidersFrom } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { RouteReuseStrategy, provideRouter, withPreloading, PreloadAllModules } from '@angular/router';
@@ -19,6 +20,7 @@ if (environment.production) {
 
 bootstrapApplication(AppComponent, {
   providers: [
+    Printer,
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
     provideIonicAngular(),
     provideRouter(routes, withPreloading(PreloadAllModules)),

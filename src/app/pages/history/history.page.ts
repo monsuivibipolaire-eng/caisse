@@ -25,7 +25,7 @@ import { ReceiptModalComponent } from 'src/app/components/receipt-modal/receipt-
   styleUrls: ['./history.page.scss'],
   standalone: true,
   imports: [
-    CommonModule, RouterLink, FormsModule,
+    CommonModule, FormsModule,
     IonContent, IonIcon, IonModal, IonDatetime, IonDatetimeButton,
     IonSegment, IonSegmentButton, IonLabel, IonMenuButton,
     IonSelect, IonSelectOption

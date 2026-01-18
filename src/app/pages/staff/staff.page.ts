@@ -13,7 +13,7 @@ import { Observable } from 'rxjs';
   selector: 'app-staff',
   templateUrl: './staff.page.html',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, IonContent, IonIcon, IonMenuButton]
+  imports: [CommonModule, FormsModule, IonContent, IonIcon, IonMenuButton]
 })
 export class StaffPage implements OnInit {
   

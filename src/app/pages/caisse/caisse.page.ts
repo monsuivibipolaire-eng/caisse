@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { 
-  IonContent, IonIcon, IonSpinner, ModalController, ToastController, 
+  IonContent, IonIcon, ModalController, ToastController, 
   IonSelect, IonSelectOption, IonMenuButton 
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
@@ -25,7 +25,7 @@ import { ReceiptModalComponent } from 'src/app/components/receipt-modal/receipt-
   templateUrl: './caisse.page.html',
   styleUrls: ['./caisse.page.scss'],
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, IonContent, IonIcon, IonSpinner, IonSelect, IonSelectOption, IonMenuButton]
+  imports: [CommonModule, FormsModule, IonContent, IonIcon, IonSelect, IonSelectOption, IonMenuButton]
 })
 export class CaissePage implements OnInit {
 

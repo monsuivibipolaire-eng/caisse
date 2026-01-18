@@ -2,8 +2,8 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { 
-  IonApp, IonRouterOutlet, IonMenu, IonContent, IonList, IonItem, 
-  IonIcon, IonMenuToggle, IonAvatar, IonRippleEffect 
+  IonApp, IonRouterOutlet, IonMenu, IonContent, IonList, 
+  IonIcon, IonMenuToggle 
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { 
@@ -21,7 +21,7 @@ import { AuthService } from './services/auth.service';
   imports: [
     CommonModule, RouterLink, RouterLinkActive,
     IonApp, IonRouterOutlet, IonMenu, IonContent, IonList, 
-    IonItem, IonIcon, IonMenuToggle, IonAvatar, IonRippleEffect
+    IonIcon, IonMenuToggle
   ],
 })
 export class AppComponent {
