@@ -1,18 +1,21 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonContent, IonButton, IonIcon, ModalController } from '@ionic/angular/standalone';
+import { IonicModule, ModalController, Platform } from '@ionic/angular'; // ✅ Correction : Import de IonicModule
 import { addIcons } from 'ionicons';
-import { printOutline, closeOutline, checkmarkCircle } from 'ionicons/icons';
+import { printOutline, closeOutline, checkmarkCircle, barcodeOutline } from 'ionicons/icons';
 import { Sale } from 'src/app/models/sale.model';
 import { ConfigService } from 'src/app/services/config.service';
 import { StoreConfig } from 'src/app/models/config.model';
+import { Printer, PrintOptions } from '@awesome-cordova-plugins/printer/ngx';
 
 @Component({
   selector: 'app-receipt-modal',
   templateUrl: './receipt-modal.component.html',
   styleUrls: ['./receipt-modal.component.scss'],
   standalone: true,
-  imports: [CommonModule, IonContent, IonButton, IonIcon]
+  // ✅ Correction : On utilise IonicModule au lieu de lister les composants individuellement
+  imports: [CommonModule, IonicModule], 
+  providers: [Printer]
 })
 export class ReceiptModalComponent implements OnInit {
 
@@ -21,9 +24,11 @@ export class ReceiptModalComponent implements OnInit {
 
   constructor(
     private modalCtrl: ModalController,
-    private configService: ConfigService
+    private configService: ConfigService,
+    private printer: Printer,
+    private platform: Platform
   ) {
-    addIcons({ printOutline, closeOutline, checkmarkCircle });
+    addIcons({ printOutline, closeOutline, checkmarkCircle, barcodeOutline });
   }
 
   ngOnInit() {
@@ -34,23 +39,50 @@ export class ReceiptModalComponent implements OnInit {
     this.modalCtrl.dismiss();
   }
 
-  // --- CORRECTION DU CRASH DATE ---
-  parseDate(date: any): any {
-    if (!date) return null;
-    
-    // Si c'est déjà une Date JS valide
-    if (date instanceof Date) return date;
-    
-    // Si c'est un Timestamp Firestore (objet avec seconds)
-    if (typeof date === 'object' && 'seconds' in date) {
-      return new Date(date.seconds * 1000);
+  // --- FONCTION ANTI-CRASH ---
+  parseDate(date: any): Date {
+    let validDate: Date;
+
+    if (!date) {
+      validDate = new Date();
+    } 
+    else if (typeof date === 'object' && 'seconds' in date) {
+      validDate = new Date(date.seconds * 1000);
+    } 
+    else {
+      validDate = new Date(date);
     }
 
-    // Si c'est une chaine ou un nombre
-    return new Date(date);
+    if (isNaN(validDate.getTime())) {
+      return new Date();
+    }
+
+    return validDate;
   }
 
-  printReceipt() {
-    window.print();
+  async printReceipt() {
+    const content = document.getElementById('receipt-area')?.innerHTML;
+    const options: PrintOptions = {
+      name: 'Ticket Caisse',
+      duplex: false,
+      orientation: 'portrait',
+      monochrome: true
+    };
+
+    if (!this.platform.is('cordova') && !this.platform.is('capacitor')) {
+      window.print();
+      return;
+    }
+
+    try {
+      const printResult = this.printer.print(content || '', options);
+      if (printResult && typeof printResult.then === 'function') {
+        await printResult;
+      } else {
+        window.print();
+      }
+    } catch (e) {
+      window.print();
+    }
   }
 }

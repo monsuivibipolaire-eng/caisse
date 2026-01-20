@@ -16,7 +16,10 @@
         <h1 class="text-xl font-extrabold uppercase tracking-widest">{{ config?.name || 'MON MAGASIN' }}</h1>
         <p class="text-xs font-mono text-slate-500 mt-1 whitespace-pre-line">{{ config?.address || 'Adresse non configurée' }}</p>
         <p class="text-xs font-mono text-slate-500">{{ config?.phone }}</p>
-        <p class="text-xs font-mono text-slate-500 mt-1">{{ parseDate(sale.date) | date:'dd/MM/yyyy HH:mm' }}</p>
+        
+        <p class="text-xs font-mono text-slate-500 mt-1">
+            {{ parseDate(sale.date) | date:'dd/MM/yyyy HH:mm' }}
+        </p>
       </div>
 
       <div class="border-b-2 border-dashed border-slate-300 my-4"></div>
