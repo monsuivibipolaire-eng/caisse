@@ -1,20 +1,18 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonContent, IonButton, IonIcon, ModalController, IonicModule, Platform } from '@ionic/angular';
+import { IonContent, IonButton, IonIcon, ModalController } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { printOutline, closeOutline, checkmarkCircle, barcodeOutline } from 'ionicons/icons';
+import { printOutline, closeOutline, checkmarkCircle } from 'ionicons/icons';
 import { Sale } from 'src/app/models/sale.model';
 import { ConfigService } from 'src/app/services/config.service';
 import { StoreConfig } from 'src/app/models/config.model';
-import { Printer, PrintOptions } from '@awesome-cordova-plugins/printer/ngx';
 
 @Component({
   selector: 'app-receipt-modal',
   templateUrl: './receipt-modal.component.html',
   styleUrls: ['./receipt-modal.component.scss'],
   standalone: true,
-  imports: [CommonModule, IonicModule],
-  providers: [Printer] // Ajout local au cas où main.ts a raté
+  imports: [CommonModule, IonContent, IonButton, IonIcon]
 })
 export class ReceiptModalComponent implements OnInit {
 
@@ -23,11 +21,9 @@ export class ReceiptModalComponent implements OnInit {
 
   constructor(
     private modalCtrl: ModalController,
-    private configService: ConfigService,
-    private printer: Printer,
-    private platform: Platform
+    private configService: ConfigService
   ) {
-    addIcons({ printOutline, closeOutline, checkmarkCircle, barcodeOutline });
+    addIcons({ printOutline, closeOutline, checkmarkCircle });
   }
 
   ngOnInit() {
@@ -38,63 +34,23 @@ export class ReceiptModalComponent implements OnInit {
     this.modalCtrl.dismiss();
   }
 
+  // --- CORRECTION DU CRASH DATE ---
   parseDate(date: any): any {
-    if (!date) return new Date();
+    if (!date) return null;
+    
+    // Si c'est déjà une Date JS valide
+    if (date instanceof Date) return date;
+    
+    // Si c'est un Timestamp Firestore (objet avec seconds)
     if (typeof date === 'object' && 'seconds' in date) {
       return new Date(date.seconds * 1000);
     }
-    return date;
+
+    // Si c'est une chaine ou un nombre
+    return new Date(date);
   }
 
   printReceipt() {
-    const content = document.getElementById('receipt-area')?.innerHTML;
-    const options: PrintOptions = {
-      name: 'Ticket Caisse',
-      duplex: false,
-      orientation: 'portrait',
-      monochrome: true
-    };
-
-    // Fonction d'impression native
-    const doNativePrint = () => {
-      this.printer.print(content || '', options).then(() => {
-        console.log("Impression terminée");
-      }).catch(err => {
-        console.error("Erreur impression native:", err);
-        // Dernier recours : window.print
-        window.print();
-      });
-    };
-
-    // 1. Si on est sur un navigateur web classique (pas une app)
-    if (!this.platform.is('capacitor') && !this.platform.is('cordova')) {
-      console.warn("Mode Web détecté -> window.print()");
-      window.print();
-      return;
-    }
-
-    // 2. Vérification sécurisée du plugin
-    try {
-      const check = this.printer.isAvailable();
-      
-      // Si check est une promesse valide
-      if (check && typeof check.then === 'function') {
-        check.then(() => {
-          doNativePrint();
-        }).catch(() => {
-          // Si isAvailable rejette (ex: pas d'app d'impression installée), on tente quand même d'imprimer
-          // car parfois isAvailable ment sur Android POS
-          doNativePrint();
-        });
-      } else {
-        // Le plugin a renvoyé undefined (cas de ton erreur)
-        console.warn("Plugin Printer mal chargé, tentative directe...");
-        doNativePrint();
-      }
-    } catch (e) {
-      console.error("Crash check printer", e);
-      // En cas de crash total, on essaie window.print
-      window.print();
-    }
+    window.print();
   }
 }

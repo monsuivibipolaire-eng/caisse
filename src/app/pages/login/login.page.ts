@@ -15,8 +15,8 @@ import { Router } from '@angular/router';
 })
 export class LoginPage implements OnInit {
 
-  email = '';
-  password = '';
+  email = 'admin@gmail.com';
+  password = 'User123';
   isLoading = false;
   errorMessage = '';
 
